@@ -1,0 +1,801 @@
+openapi: 3.0.3
+info:
+  title: ReviewApp API
+  description: |
+    **「使えば使うほど、あなたらしくなるAIアシスタント」**
+    
+    RAGベースのAIコードレビューツール。
+    あなたのコーディング哲学を学習し、一貫性のある「あなたらしい」レビューを提供します。
+    
+    ## 主要機能
+    - 📚 **ナレッジ管理**: コーディングルール・哲学を蓄積
+    - 🔍 **RAG検索**: Phase 1（キーワード） → Phase 2（ベクトル検索）
+    - 💬 **コードレビュー**: 過去のナレッジを参照した一貫性のあるレビュー
+    - 📊 **レビュー履歴**: フィードバックで精度向上
+    
+  version: 0.1.0
+  contact:
+    name: ReviewApp Support
+    email: support@reviewapp.example.com
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080
+    description: ローカル開発環境
+  - url: https://api.reviewapp.example.com
+    description: 本番環境
+
+tags:
+  - name: Health
+    description: ヘルスチェック
+  - name: Users
+    description: ユーザー管理
+  - name: Knowledge
+    description: ナレッジ管理（コア機能）
+  - name: Reviews
+    description: コードレビュー
+  - name: Tags
+    description: タグ管理
+
+# =====================================================
+# セキュリティスキーム
+# =====================================================
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT認証トークン
+
+  # =====================================================
+  # 共通スキーマ
+  # =====================================================
+  schemas:
+    # --- エラーレスポンス ---
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "invalid_request"
+        message:
+          type: string
+          example: "リクエストが不正です"
+        details:
+          type: object
+          additionalProperties: true
+
+    # --- ページネーション ---
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        per_page:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 100
+        total_pages:
+          type: integer
+          example: 5
+
+    # --- User ---
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        name:
+          type: string
+          example: "山田太郎"
+        avatar_url:
+          type: string
+          nullable: true
+          example: "https://example.com/avatar.jpg"
+        bio:
+          type: string
+          nullable: true
+          example: "Goエンジニア"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    # --- Knowledge ---
+    Knowledge:
+      type: object
+      required:
+        - id
+        - user_id
+        - title
+        - content
+        - category
+        - priority
+        - source_type
+        - is_active
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 200
+          example: "エラーハンドリングの原則"
+        content:
+          type: string
+          example: "エラーは必ずログに出力し、ユーザー向けメッセージと開発者向け詳細を分ける"
+        category:
+          type: string
+          enum:
+            - error_handling
+            - testing
+            - performance
+            - security
+            - clean_code
+            - architecture
+            - other
+          example: "error_handling"
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+          description: "重要度（1=低、5=高）"
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        source_type:
+          type: string
+          enum:
+            - review
+            - conversation
+            - manual
+          example: "manual"
+        source_id:
+          type: string
+          format: uuid
+          nullable: true
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # --- Knowledge Input ---
+    KnowledgeInput:
+      type: object
+      required:
+        - title
+        - content
+        - category
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          example: "エラーハンドリングの原則"
+        content:
+          type: string
+          example: "エラーは必ずログに出力する"
+        category:
+          type: string
+          example: "error_handling"
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+          default: 3
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["go", "error"]
+
+    # --- Review ---
+    Review:
+      type: object
+      required:
+        - id
+        - user_id
+        - code
+        - language
+        - review_result
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          example: |
+            func ProcessData(data string) error {
+                if data == "" {
+                    return errors.New("empty data")
+                }
+                return nil
+            }
+        language:
+          type: string
+          example: "go"
+        file_name:
+          type: string
+          nullable: true
+          example: "handler.go"
+        review_result:
+          type: string
+          example: "エラーハンドリングが適切です。ただし、エラーメッセージにはもう少し詳細を含めるとデバッグしやすくなります。"
+        referenced_knowledge:
+          type: array
+          items:
+            $ref: '#/components/schemas/Knowledge'
+          description: "レビュー時に参照されたナレッジ"
+        llm_provider:
+          type: string
+          example: "claude"
+        llm_model:
+          type: string
+          example: "claude-3-5-sonnet-20241022"
+        tokens_used:
+          type: integer
+          nullable: true
+          example: 1250
+        feedback_score:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 5
+          description: "ユーザーフィードバック（1=悪い、5=良い）"
+        feedback_comment:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # --- Review Input ---
+    ReviewInput:
+      type: object
+      required:
+        - code
+        - language
+      properties:
+        code:
+          type: string
+          example: |
+            func ProcessData(data string) error {
+                if data == "" {
+                    return errors.New("empty data")
+                }
+                return nil
+            }
+        language:
+          type: string
+          example: "go"
+        file_name:
+          type: string
+          example: "handler.go"
+
+    # --- Tag ---
+    Tag:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "go"
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: "#3178C6"
+        created_at:
+          type: string
+          format: date-time
+
+# =====================================================
+# Paths（エンドポイント）
+# =====================================================
+paths:
+  # =====================================================
+  # Health Check
+  # =====================================================
+  /health:
+    get:
+      tags:
+        - Health
+      summary: ヘルスチェック
+      description: APIサーバーの状態を確認
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  service:
+                    type: string
+                    example: "ReviewApp API"
+
+  /:
+    get:
+      tags:
+        - Health
+      summary: ルート
+      description: API情報を取得
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ReviewApp API"
+                  version:
+                    type: string
+                    example: "0.1.0"
+
+  # =====================================================
+  # Users
+  # =====================================================
+  /api/v1/users/me:
+    get:
+      tags:
+        - Users
+      summary: 現在のユーザー情報を取得
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # =====================================================
+  # Knowledge（ナレッジ管理 - コア機能）
+  # =====================================================
+  /api/v1/knowledge:
+    get:
+      tags:
+        - Knowledge
+      summary: ナレッジ一覧を取得
+      parameters:
+        - name: category
+          in: query
+          description: カテゴリでフィルタ
+          schema:
+            type: string
+            example: "error_handling"
+        - name: tag
+          in: query
+          description: タグでフィルタ
+          schema:
+            type: string
+            example: "go"
+        - name: priority
+          in: query
+          description: 優先度でフィルタ
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Knowledge'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags:
+        - Knowledge
+      summary: ナレッジを作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnowledgeInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Knowledge'
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/knowledge/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    
+    get:
+      tags:
+        - Knowledge
+      summary: ナレッジを取得
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Knowledge'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Knowledge
+      summary: ナレッジを更新
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnowledgeInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Knowledge'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Knowledge
+      summary: ナレッジを削除
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/knowledge/search:
+    get:
+      tags:
+        - Knowledge
+      summary: ナレッジを検索
+      description: |
+        **Phase 1**: キーワード検索（全文検索）
+        **Phase 2**: ベクトル検索（意味的類似度）
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: 検索クエリ
+          schema:
+            type: string
+            example: "エラーハンドリング"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+            maximum: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      allOf:
+                        - $ref: '#/components/schemas/Knowledge'
+                        - type: object
+                          properties:
+                            relevance_score:
+                              type: number
+                              format: float
+                              description: "関連度スコア（Phase 2で使用）"
+                              example: 0.92
+                  search_method:
+                    type: string
+                    enum: [keyword, vector]
+                    description: "使用された検索方法"
+                    example: "keyword"
+
+  # =====================================================
+  # Reviews（コードレビュー）
+  # =====================================================
+  /api/v1/reviews:
+    get:
+      tags:
+        - Reviews
+      summary: レビュー履歴を取得
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Review'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags:
+        - Reviews
+      summary: コードレビューを実行
+      description: |
+        RAGの核心機能:
+        1. 関連ナレッジを検索
+        2. ナレッジをプロンプトに含めてLLM呼び出し
+        3. 一貫性のあるレビューを生成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: LLM APIエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/reviews/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    
+    get:
+      tags:
+        - Reviews
+      summary: レビュー詳細を取得
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/reviews/{id}/feedback:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    
+    post:
+      tags:
+        - Reviews
+      summary: レビューにフィードバックを送信
+      description: ユーザーフィードバックで精度向上
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - score
+              properties:
+                score:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: "1=悪い、5=良い"
+                comment:
+                  type: string
+                  description: "任意のコメント"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "フィードバックを受け付けました"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # =====================================================
+  # Tags（タグ管理）
+  # =====================================================
+  /api/v1/tags:
+    get:
+      tags:
+        - Tags
+      summary: タグ一覧を取得
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tag'
+
+    post:
+      tags:
+        - Tags
+      summary: タグを作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "go"
+                color:
+                  type: string
+                  pattern: '^#[0-9A-Fa-f]{6}$'
+                  example: "#3178C6"
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '409':
+          description: タグが既に存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

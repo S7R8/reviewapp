@@ -1,0 +1,66 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: reviewapp-dev
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    command: sleep infinity
+    environment:
+      - DATABASE_URL=postgres://dev_user:dev_password@postgres:5432/reviewapp?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - reviewapp-network
+    env_file:
+      - backend/.env
+
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: reviewapp-postgres
+    environment:
+      POSTGRES_DB: reviewapp
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - reviewapp-network
+
+  postgres-test:
+    image: pgvector/pgvector:pg15
+    container_name: reviewapp-postgres-test
+    environment:
+      POSTGRES_DB: reviewapp_test  # テスト用データベース名
+      POSTGRES_USER: dev_user_test
+      POSTGRES_PASSWORD: dev_password_test
+    ports:
+      - "5431:5432"  # ローカルマシンでのポート
+    volumes:
+      - postgres-data:/var/lib/postgresql/data-test
+    networks:
+      - reviewapp-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: reviewapp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - reviewapp-network
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  reviewapp-network:
+    driver: bridge

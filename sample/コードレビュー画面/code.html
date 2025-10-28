@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="" lang="ja"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Code Review</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800;900&amp;family=Noto+Sans+JP:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<script>tailwind.config = {darkMode: "class", theme: {extend: {colors: {primary: "#F4C753", secondary: "#FBBF24", "background-light": "#f8f7f6", "background-dark": "#221d10"}, fontFamily: {display: "Manrope"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}}}};</script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+    }
+
+    .code-editor-line-number {
+      color: #6B7280;
+    }
+
+    .code-editor-keyword {
+      color: #3B82F6;
+    }
+
+    .code-editor-string {
+      color: #FBBF24;
+    }
+
+    .code-editor-comment {
+      color: #16A34A;
+    }
+
+    .code-editor-function {
+      color: #EC4899;
+    }
+
+    .code-editor-variable {
+      color: #E5E7EB;
+    }
+
+    /* For custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-200 font-display">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="flex w-64 flex-col bg-white/5 dark:bg-black/20 p-4 border-r border-gray-200/10 dark:border-gray-800/50">
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="User avatar with abstract gradient" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuArqunE4G9Z2OqBG0Fuq4tjYYqxz8x2M6Gcrgn0531BlCfLVgACQBdp-Asz2A5I2wmVrHSymsA3kojqetJ76n5oIK19ByVxQBVcBVohPZC5BRnQ_LXJ6eEmDZ2MWfdnQGrHR4jKilyvMaU3ZAzzkM2XcbkDFbzN6iIcb36CtWwR4cyLFEwOAUIIEXfaRcWsqFtC1yPqIDs20RG5DueSoeZqNuD0Iy0kSeto_gA-tqNZkPVQeC7IH-RzZycL9egQlE38_Sy70M4jCY4");'></div>
+<div class="flex flex-col">
+<h1 class="text-gray-900 dark:text-white text-base font-medium leading-normal">山田 太郎</h1>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal">ようこそ</p>
+</div>
+</div>
+<nav class="flex flex-col gap-2 mt-4">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<p class="text-sm font-medium leading-normal">ダッシュボード</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/20 text-primary dark:text-white dark:bg-primary/30" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">code</span>
+<p class="text-sm font-medium leading-normal">コードレビュー</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">book</span>
+<p class="text-sm font-medium leading-normal">ナレッジベース</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<p class="text-sm font-medium leading-normal">履歴</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-sm font-medium leading-normal">設定</p>
+</a>
+</nav>
+</div>
+<div class="mt-auto flex flex-col gap-4">
+<button class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
+<span class="truncate">新規レビュー</span>
+</button>
+<div class="flex flex-col gap-1 border-t border-gray-200/10 dark:border-gray-800/50 pt-4">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<p class="text-sm font-medium leading-normal">ヘルプ</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">logout</span>
+<p class="text-sm font-medium leading-normal">ログアウト</p>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col overflow-hidden">
+<div class="flex-1 flex flex-col p-6 lg:p-8 overflow-y-auto">
+<div class="flex flex-col gap-8 h-full">
+<!-- Page Heading -->
+<header>
+<h1 class="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">AIコードレビュー</h1>
+<p class="text-gray-500 dark:text-gray-400 text-base font-normal leading-normal mt-2">コードを貼り付けて、AIによるレビューを開始します。</p>
+</header>
+<!-- Main Layout -->
+<div class="flex-1 grid grid-cols-10 gap-6 h-full">
+<!-- Left Column: Input -->
+<div class="col-span-10 lg:col-span-4 flex flex-col gap-4 h-full">
+<div class="flex items-center gap-4">
+<label class="flex flex-col flex-1">
+<p class="text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal pb-2">ファイル名</p>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800/50 focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder-gray-500 px-4 text-sm font-normal leading-normal" placeholder="例：main.py" value=""/>
+</label>
+<label class="flex flex-col flex-1">
+<p class="text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal pb-2">言語</p>
+<select class="form-select flex w-full min-w-0 flex-1 appearance-none resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800/50 focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder-gray-500 px-4 text-sm font-normal leading-normal">
+<option>Python</option>
+<option>JavaScript</option>
+<option>TypeScript</option>
+<option>HTML</option>
+<option>CSS</option>
+</select>
+</label>
+</div>
+<div class="flex flex-col flex-1 bg-gray-900 rounded-xl p-4 font-mono text-sm overflow-hidden h-[400px]">
+<div class="flex-1 overflow-auto">
+<pre class="whitespace-pre"><code><span class="code-editor-line-number">1 </span> <span class="code-editor-keyword">def</span> <span class="code-editor-function">binary_search</span>(<span class="code-editor-variable">arr</span>, <span class="code-editor-variable">target</span>):
+<span class="code-editor-line-number">2 </span>   <span class="code-editor-variable">low</span> = <span class="code-editor-number">0</span>
+<span class="code-editor-line-number">3 </span>   <span class="code-editor-variable">high</span> = len(<span class="code-editor-variable">arr</span>) - <span class="code-editor-number">1</span>
+<span class="code-editor-line-number">4 </span> 
+<span class="code-editor-line-number">5 </span>   <span class="code-editor-keyword">while</span> <span class="code-editor-variable">low</span> &lt;= <span class="code-editor-variable">high</span>:
+<span class="code-editor-line-number">6 </span>     <span class="code-editor-comment"># This is a potential bug, can cause overflow</span>
+<span class="code-editor-line-number">7 </span>     <span class="code-editor-variable">mid</span> = (<span class="code-editor-variable">low</span> + <span class="code-editor-variable">high</span>) // <span class="code-editor-number">2</span>
+<span class="code-editor-line-number">8 </span>     <span class="code-editor-variable">guess</span> = <span class="code-editor-variable">arr</span>[<span class="code-editor-variable">mid</span>]
+<span class="code-editor-line-number">9 </span> 
+<span class="code-editor-line-number">10</span>     <span class="code-editor-keyword">if</span> <span class="code-editor-variable">guess</span> == <span class="code-editor-variable">target</span>:
+<span class="code-editor-line-number">11</span>       <span class="code-editor-keyword">return</span> <span class="code-editor-variable">mid</span>
+<span class="code-editor-line-number">12</span>     <span class="code-editor-keyword">if</span> <span class="code-editor-variable">guess</span> &gt; <span class="code-editor-variable">target</span>:
+<span class="code-editor-line-number">13</span>       <span class="code-editor-variable">high</span> = <span class="code-editor-variable">mid</span> - <span class="code-editor-number">1</span>
+<span class="code-editor-line-number">14</span>     <span class="code-editor-keyword">else</span>:
+<span class="code-editor-line-number">15</span>       <span class="code-editor-variable">low</span> = <span class="code-editor-variable">mid</span> + <span class="code-editor-number">1</span>
+<span class="code-editor-line-number">16</span>   <span class="code-editor-keyword">return</span> <span class="code-editor-variable">None</span>
+<span class="code-editor-line-number">17</span>
+<span class="code-editor-line-number">18</span> <span class="code-editor-comment"># Test the function</span>
+<span class="code-editor-line-number">19</span> <span class="code-editor-variable">my_list</span> = [<span class="code-editor-number">1</span>, <span class="code-editor-number">3</span>, <span class="code-editor-number">5</span>, <span class="code-editor-number">7</span>, <span class="code-editor-number">9</span>]
+<span class="code-editor-line-number">20</span> <span class="code-editor-keyword">print</span>(<span class="code-editor-function">binary_search</span>(<span class="code-editor-variable">my_list</span>, <span class="code-editor-number">3</span>))  <span class="code-editor-comment"># Expected: 1</span>
+<span class="code-editor-line-number">21</span> <span class="code-editor-keyword">print</span>(<span class="code-editor-function">binary_search</span>(<span class="code-editor-variable">my_list</span>, -<span class="code-editor-number">1</span>)) <span class="code-editor-comment"># Expected: None</span>
+</code></pre>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex-1 flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-4 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
+<span class="truncate">レビュー実行</span>
+</button>
+<label class="flex flex-col flex-1">
+<select class="form-select flex w-full min-w-0 flex-1 appearance-none resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800/50 focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder-gray-500 px-4 text-sm font-normal leading-normal">
+<option>過去のレビューから選択</option>
+<option>main.py (2023-10-26)</option>
+<option>utils.js (2023-10-25)</option>
+</select>
+</label>
+</div>
+</div>
+<!-- Right Column: Output -->
+<div class="col-span-10 lg:col-span-6 flex flex-col bg-white dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800 h-full">
+<div class="p-6 border-b border-gray-200 dark:border-gray-800">
+<h2 class="text-lg font-bold text-gray-900 dark:text-white">レビュー結果</h2>
+</div>
+<div class="flex-1 p-6 overflow-y-auto space-y-6">
+<!-- Loading State (uncomment to see)
+                <div class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                  <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p class="mt-4 text-sm">AIがレビューを生成中です...</p>
+                </div>
+                -->
+<!-- Review Content -->
+<div class="prose prose-sm dark:prose-invert max-w-none prose-pre:bg-gray-100 dark:prose-pre:bg-gray-800 prose-pre:rounded-lg">
+<p>全体的に良いコードですが、いくつかの改善点があります。</p>
+<div class="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+<h4 class="!mt-0 !mb-2 font-semibold text-green-400">良い点 (Good Points)</h4>
+<ul class="!my-0">
+<li>関数名 `binary_search` が処理内容を的確に表しています。</li>
+<li>変数のスコープが適切に管理されています。</li>
+</ul>
+</div>
+<div class="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+<h4 class="!mt-0 !mb-2 font-semibold text-secondary">改善点 (Improvements)</h4>
+<ol class="!my-0">
+<li>
+<strong>Integer Overflowの可能性:</strong><br/>
+                        7行目の `mid = (low + high) // 2` は、`low` と `high` が非常に大きい場合にオーバーフローを引き起こす可能性があります。
+                        <pre><code><span class="text-red-500">- mid = (low + high) // 2</span>
+<span class="text-green-500">+ mid = low + (high - low) // 2</span></code></pre>
+                        この変更により、`low + high` が言語の整数型の最大値を超えることを防げます。
+                      </li>
+<li>
+<strong>ドキュメンテーションの追加:</strong><br/>
+                        関数にDocstringを追加することで、他の開発者が関数の目的、引数、返り値を容易に理解できるようになります。
+                      </li>
+</ol>
+</div>
+</div>
+<details class="group">
+<summary class="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-base transition-transform group-open:rotate-90">chevron_right</span>
+                    レビューの根拠を表示
+                  </summary>
+<div class="mt-3 ml-6 pl-4 border-l-2 border-primary/30 text-xs text-gray-500 dark:text-gray-400">
+<p>このレビューは、一般的なプログラミングのベストプラクティスに基づいています。特に、大規模データセットを扱う際のInteger Overflowの脆弱性（CWE-190）に関する知見を参考にしています。</p>
+</div>
+</details>
+</div>
+<div class="p-4 flex items-center justify-end gap-4 border-t border-gray-200 dark:border-gray-800">
+<p class="text-sm text-gray-500 dark:text-gray-400 mr-auto">このレビューは役に立ちましたか？</p>
+<button class="flex items-center justify-center size-9 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg">thumb_up</span>
+</button>
+<button class="flex items-center justify-center size-9 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg">thumb_down</span>
+</button>
+<button class="flex items-center gap-2 min-w-[84px] cursor-pointer justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary/20 text-primary dark:bg-primary/30 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/30 dark:hover:bg-primary/40 transition-colors">
+<span class="material-symbols-outlined text-base">bookmark_add</span>
+<span class="truncate">ナレッジとして保存</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Panel: Knowledge -->
+<footer class="border-t border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm">
+<details open="">
+<summary class="p-3 cursor-pointer flex justify-between items-center list-none">
+<h3 class="text-base font-bold text-gray-900 dark:text-white">関連ナレッジ</h3>
+<span class="material-symbols-outlined text-gray-500 dark:text-gray-400 transition-transform transform">expand_less</span>
+</summary>
+<div class="p-6 pt-0 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+<!-- Knowledge Card 1 -->
+<div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 space-y-2 hover:border-primary/50 hover:shadow-lg transition-all">
+<h4 class="font-bold text-sm text-gray-900 dark:text-white">PythonのInteger Overflow対策</h4>
+<p class="text-xs text-gray-500 dark:text-gray-400">二分探索などの中間値計算で発生しうるオーバーフローの回避パターン集。</p>
+<div class="flex gap-2 pt-1">
+<span class="text-xs font-medium px-2 py-1 rounded-full bg-blue-500/10 text-blue-500">Python</span>
+<span class="text-xs font-medium px-2 py-1 rounded-full bg-gray-500/10 text-gray-500">Algorithm</span>
+</div>
+</div>
+<!-- Knowledge Card 2 -->
+<div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 space-y-2 hover:border-primary/50 hover:shadow-lg transition-all">
+<h4 class="font-bold text-sm text-gray-900 dark:text-white">効果的なDocstringの書き方</h4>
+<p class="text-xs text-gray-500 dark:text-gray-400">Googleスタイルガイドに準拠した可読性の高いDocstringのフォーマット。</p>
+<div class="flex gap-2 pt-1">
+<span class="text-xs font-medium px-2 py-1 rounded-full bg-blue-500/10 text-blue-500">Python</span>
+<span class="text-xs font-medium px-2 py-1 rounded-full bg-green-500/10 text-green-500">Documentation</span>
+</div>
+</div>
+<!-- Knowledge Card 3 -->
+<div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 space-y-2 hover:border-primary/50 hover:shadow-lg transition-all">
+<h4 class="font-bold text-sm text-gray-900 dark:text-white">JavaScriptのNullチェック</h4>
+<p class="text-xs text-gray-500 dark:text-gray-400">Optional Chaining (`?.`) を用いた安全なプロパティアクセスの実践方法。</p>
+<div class="flex gap-2 pt-1">
+<span class="text-xs font-medium px-2 py-1 rounded-full bg-yellow-400/20 text-yellow-500">JavaScript</span>
+</div>
+</div>
+</div>
+</details>
+</footer>
+</main>
+</div>
+</body></html>

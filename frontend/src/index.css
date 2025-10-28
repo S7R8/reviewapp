@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #F4C753;
+  --color-accent: #FBBF24;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-background-light: #f8f7f6;
+  
+  --font-family-display: 'Manrope', 'Noto Sans JP', sans-serif;
+}
+
+@layer base {
+  @font-face {
+    font-family: 'Manrope';
+    font-style: normal;
+    font-weight: 400 800;
+    font-display: swap;
+    src: url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap');
+  }
+
+  @font-face {
+    font-family: 'Noto Sans JP';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family-display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* カスタムスクロールバー */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* アニメーション */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out;
+}
+
+.animate-slide-out-left {
+  animation: slide-out-left 0.3s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

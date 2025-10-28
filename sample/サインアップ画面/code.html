@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+
+<html class="" lang="ja"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>新規登録</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;family=Noto+Sans+JP:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {primary: "#F4C753", accent: "#FFC700", "background-light": "#f8f7f6", "background-dark": "#221d10", "text-light": "#333333", "text-dark": "#E0E0E0", "placeholder-light": "#A0A0A0", "placeholder-dark": "#717d8a", "border-light": "#D1D5DB", "border-dark": "#314d68", "card-light": "#FFFFFF", "card-dark": "#182634"}, fontFamily: {display: "Manrope"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}}}};</script>
+<style>
+      body {
+        font-family: 'Manrope', 'Noto Sans JP', sans-serif;
+      }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark">
+<div class="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
+<div class="w-full max-w-md space-y-8 rounded-xl bg-card-light dark:bg-card-dark p-8 shadow-lg">
+<!-- PageHeading -->
+<div class="flex flex-col items-center">
+<div class="mb-2 flex size-12 items-center justify-center rounded-full bg-accent">
+<span class="material-symbols-outlined text-3xl text-black">app_registration</span>
+</div>
+<h1 class="text-3xl font-bold tracking-tight text-text-light dark:text-white">新規登録</h1>
+<p class="mt-2 text-center text-sm text-placeholder-light dark:text-placeholder-dark">新しいアカウントを作成して始めましょう</p>
+</div>
+<form class="space-y-6">
+<!-- TextField: Email -->
+<div class="flex flex-col">
+<label class="mb-2 text-sm font-medium text-text-light dark:text-white" for="email">メールアドレス</label>
+<div class="relative">
+<span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-placeholder-light dark:text-placeholder-dark">mail</span>
+<input class="form-input h-12 w-full rounded-lg border border-border-light bg-background-light p-3 pl-10 text-base text-text-light placeholder:text-placeholder-light focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-border-dark dark:bg-background-dark dark:text-white dark:placeholder:text-placeholder-dark" id="email" placeholder="your@email.com" type="email"/>
+</div>
+</div>
+<!-- TextField: Password -->
+<div class="flex flex-col">
+<label class="mb-2 text-sm font-medium text-text-light dark:text-white" for="password">パスワード</label>
+<div class="relative">
+<span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-placeholder-light dark:text-placeholder-dark">lock</span>
+<input class="form-input h-12 w-full rounded-lg border border-border-light bg-background-light p-3 px-10 text-base text-text-light placeholder:text-placeholder-light focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-border-dark dark:bg-background-dark dark:text-white dark:placeholder:text-placeholder-dark" id="password" placeholder="パスワードを入力" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-placeholder-light dark:text-placeholder-dark" type="button">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</div>
+<!-- TextField: Password Confirmation -->
+<div class="flex flex-col">
+<label class="mb-2 text-sm font-medium text-text-light dark:text-white" for="password-confirm">パスワード（確認用）</label>
+<div class="relative">
+<span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-placeholder-light dark:text-placeholder-dark">lock</span>
+<input class="form-input h-12 w-full rounded-lg border border-border-light bg-background-light p-3 px-10 text-base text-text-light placeholder:text-placeholder-light focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-border-dark dark:bg-background-dark dark:text-white dark:placeholder:text-placeholder-dark" id="password-confirm" placeholder="パスワードを再入力" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-placeholder-light dark:text-placeholder-dark" type="button">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</div>
+<!-- ListItem: Terms of Service Checkbox -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<input class="form-checkbox h-5 w-5 rounded border-2 border-border-light bg-transparent text-primary focus:ring-primary/30 focus:ring-offset-0 dark:border-border-dark dark:checked:bg-primary dark:focus:ring-offset-card-dark" id="terms" type="checkbox"/>
+<label class="text-sm text-text-light dark:text-text-dark" for="terms">利用規約に同意する</label>
+</div>
+<a class="text-sm font-medium text-primary hover:underline" href="#">詳細</a>
+</div>
+<!-- Primary Button -->
+<button class="w-full rounded-lg bg-primary py-3 text-base font-semibold text-white transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-card-dark" type="submit">
+                    アカウント作成
+                </button>
+</form>
+<!-- Secondary Link -->
+<div class="text-center">
+<p class="text-sm text-placeholder-light dark:text-placeholder-dark">
+                    アカウントをお持ちですか？ <a class="font-medium text-primary hover:underline" href="#">ログイン</a>
+</p>
+</div>
+</div>
+</div>
+</body></html>

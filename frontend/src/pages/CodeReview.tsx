@@ -3,11 +3,10 @@ import ReactMarkdown from 'react-markdown';
 import Editor from '@monaco-editor/react';
 import Sidebar, { SidebarToggle } from '../components/Sidebar';
 import { ReviewResultSkeleton } from '../components/Skeleton';
+import { FeedbackButtons } from '../components/FeedbackButtons';
 import { useSidebar } from '../hooks/useSidebar';
 import { useReviewStore } from '../store/reviewStore';
 import {
-  ThumbsUp,
-  ThumbsDown,
   Bookmark,
   ChevronRight,
   AlertTriangle,
@@ -286,16 +285,9 @@ export default function CodeReview() {
                 </div>
 
                 {currentReview && (
-                  <div className="p-4 flex items-center justify-end gap-4 border-t border-gray-200">
-                    <p className="text-sm text-[#6B7280] mr-auto">
-                      このレビューは役に立ちましたか？
-                    </p>
-                    <button className="p-2 rounded-lg hover:bg-gray-100 text-[#6B7280] hover:text-[#F4C753] transition-colors">
-                      <ThumbsUp size={18} />
-                    </button>
-                    <button className="p-2 rounded-lg hover:bg-gray-100 text-[#6B7280] hover:text-[#F4C753] transition-colors">
-                      <ThumbsDown size={18} />
-                    </button>
+                  <div className="p-4 flex items-center justify-between border-t border-gray-200">
+                    <FeedbackButtons />
+                    
                     <button className="flex items-center gap-2 px-4 h-10 bg-[#F4C753]/20 text-[#111827] rounded-lg text-sm font-bold hover:bg-[#F4C753]/30 transition-colors">
                       <Bookmark size={16} />
                       ナレッジとして保存

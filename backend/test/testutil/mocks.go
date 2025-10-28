@@ -168,6 +168,13 @@ func (m *MockReviewRepository) FindRecentByUserID(ctx context.Context, userID st
 	return m.FindByUserID(ctx, userID, limit)
 }
 
+func (m *MockReviewRepository) UpdateFeedback(ctx context.Context, reviewID string, score int, comment string) error {
+	if m.err != nil {
+		return m.err
+	}
+	return nil
+}
+
 // ClaudeClientInterface - Claude Clientのインターフェース
 type ClaudeClientInterface interface {
 	ReviewCode(ctx context.Context, input external.ReviewCodeInput) (*external.ReviewCodeOutput, error)

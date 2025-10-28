@@ -103,7 +103,9 @@ func main() {
 	api.POST("/knowledge", knowledgeHandler.CreateKnowledge) // KN-001: ナレッジ作成
 	api.GET("/knowledge", knowledgeHandler.ListKnowledge)    // KN-002: ナレッジ一覧取得
 
-	api.POST("/reviews", reviewHandler.ReviewCode) // RV-001: コードレビュー実行
+	// レビューエンドポイント
+	api.POST("/reviews", reviewHandler.ReviewCode)                 // RV-001: コードレビュー実行
+	api.PUT("/reviews/:id/feedback", reviewHandler.UpdateFeedback) // RV-004: フィードバック更新
 
 	// 5. サーバー起動（グレースフルシャットダウン対応）
 	go func() {

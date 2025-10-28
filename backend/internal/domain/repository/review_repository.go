@@ -25,4 +25,7 @@ type ReviewRepository interface {
 
 	// FindRecentByUserID - 最近のレビューを取得
 	FindRecentByUserID(ctx context.Context, userID string, limit int) ([]*model.Review, error)
+
+	// UpdateFeedback - フィードバックを更新
+	UpdateFeedback(ctx context.Context, reviewID string, score int, comment string) error
 }

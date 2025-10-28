@@ -11,13 +11,18 @@ import (
 
 // ReviewHandler - レビューハンドラー
 type ReviewHandler struct {
-	reviewCodeUsecase *review.ReviewCodeUseCase
+	reviewCodeUsecase     *review.ReviewCodeUseCase
+	updateFeedbackUsecase *review.UpdateFeedbackUseCase
 }
 
 // NewReviewHandler - コンストラクタ
-func NewReviewHandler(reviewCodeUsecase *review.ReviewCodeUseCase) *ReviewHandler {
+func NewReviewHandler(
+	reviewCodeUsecase *review.ReviewCodeUseCase,
+	updateFeedbackUsecase *review.UpdateFeedbackUseCase,
+) *ReviewHandler {
 	return &ReviewHandler{
-		reviewCodeUsecase: reviewCodeUsecase,
+		reviewCodeUsecase:     reviewCodeUsecase,
+		updateFeedbackUsecase: updateFeedbackUsecase,
 	}
 }
 
@@ -150,4 +155,105 @@ type Improvement struct {
 	Description string `json:"description"`
 	CodeAfter   string `json:"code_after,omitempty"`
 	Severity    string `json:"severity"`
+}
+
+// UpdateFeedback - PUT /api/v1/reviews/:id/feedback
+func (h *ReviewHandler) UpdateFeedback(c echo.Context) error {
+	// 1. パスパラメータからReviewIDを取得
+	reviewID := c.Param("id")
+	if reviewID == "" {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "validation_error",
+			Message: "レビューIDは必須です",
+		})
+	}
+
+	// 2. リクエストボディをパース
+	var req UpdateFeedbackRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "invalid_request",
+			Message: "リクエストボディが不正です",
+		})
+	}
+
+	// 3. バリデーション
+	if req.Score < 1 || req.Score > 3 {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "validation_error",
+			Message: "スコアは1-3の整数で指定してください",
+		})
+	}
+
+	if len(req.Comment) > 500 {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "validation_error",
+			Message: "コメントは500文字以内にしてください",
+		})
+	}
+
+	// 4. UserID取得（Phase 1は固定）
+	userID := "00000000-0000-0000-0000-000000000001"
+
+	// 5. UseCase実行
+	input := review.UpdateFeedbackInput{
+		ReviewID: reviewID,
+		UserID:   userID,
+		Score:    req.Score,
+		Comment:  req.Comment,
+	}
+
+	output, err := h.updateFeedbackUsecase.Execute(c.Request().Context(), input)
+	if err != nil {
+		// エラーの種類を判定
+		c.Logger().Errorf("UpdateFeedback failed: %v", err)
+		
+		// レビューが見つからない
+		if err.Error() == "レビューが見つかりません" {
+			return c.JSON(http.StatusNotFound, response.ErrorResponse{
+				Error:   "not_found",
+				Message: "レビューが見つかりません",
+			})
+		}
+		
+		// 権限エラー
+		if err.Error() == "このレビューを更新する権限がありません" {
+			return c.JSON(http.StatusForbidden, response.ErrorResponse{
+				Error:   "forbidden",
+				Message: "このレビューを更新する権限がありません",
+			})
+		}
+		
+		// その他のエラー
+		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+			Error:   "internal_error",
+			Message: "サーバーエラーが発生しました",
+		})
+	}
+
+	// 6. 成功レスポンス
+	responseData := UpdateFeedbackResponse{
+		ID:              output.ReviewID,
+		FeedbackScore:   output.FeedbackScore,
+		FeedbackComment: output.FeedbackComment,
+		UpdatedAt:       output.UpdatedAt,
+	}
+
+	// ヘッダーにAPI Codeを追加
+	c.Response().Header().Set("X-API-Code", "RV-004")
+	return c.JSON(http.StatusOK, responseData)
+}
+
+// UpdateFeedbackRequest - フィードバック更新リクエスト
+type UpdateFeedbackRequest struct {
+	Score   int    `json:"score" validate:"required,min=1,max=3"`
+	Comment string `json:"comment" validate:"max=500"`
+}
+
+// UpdateFeedbackResponse - フィードバック更新レスポンス
+type UpdateFeedbackResponse struct {
+	ID              string `json:"id"`
+	FeedbackScore   int    `json:"feedback_score"`
+	FeedbackComment string `json:"feedback_comment,omitempty"`
+	UpdatedAt       string `json:"updated_at"`
 }

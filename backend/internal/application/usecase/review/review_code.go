@@ -8,6 +8,7 @@ import (
 	"github.com/s7r8/reviewapp/internal/domain/repository"
 	"github.com/s7r8/reviewapp/internal/domain/service"
 	"github.com/s7r8/reviewapp/internal/infrastructure/external"
+	"github.com/s7r8/reviewapp/internal/infrastructure/parser"
 )
 
 // ReviewCodeUseCase - コードレビューのユースケース
@@ -68,6 +69,10 @@ func (uc *ReviewCodeUseCase) Execute(ctx context.Context, input ReviewCodeInput)
 		return nil, fmt.Errorf("failed to review code: %w", err)
 	}
 
+	// 4. マークダウンを構造化データに変換
+	structuredResult := parser.ParseReviewMarkdown(reviewResult.ReviewResult)
+
+	// 5. レビューエンティティを作成
 	review := model.NewReview(
 		input.UserID,
 		input.Code,
@@ -75,26 +80,25 @@ func (uc *ReviewCodeUseCase) Execute(ctx context.Context, input ReviewCodeInput)
 		input.Context,
 	)
 
-	// 5. レビュー結果を設定
+	// 6. レビュー結果を設定
 	knowledgeIDs := extractKnowledgeIDs(knowledges)
 	review.SetReviewResult(
 		reviewResult.ReviewResult,
+		structuredResult,
 		knowledgeIDs,
 		"claude",                     // LLM Provider
 		"claude-3-5-sonnet-20241022", // LLM Model (TODO: configから取得)
 		reviewResult.TokensUsed,
 	)
 
-	// 6. レビュー結果を保存
+	// 7. レビュー結果を保存
 	if err := uc.reviewRepo.Create(ctx, review); err != nil {
 		return nil, fmt.Errorf("failed to save review: %w", err)
 	}
 
-	// 7. 使用したナレッジのusage_countを更新
-	// Phase 1では全ナレッジのカウントを増やす（シンプル）
+	// 8. ナレッジの使用カウントを更新
 	if err := uc.updateKnowledgeUsage(ctx, knowledges); err != nil {
 		// 更新失敗してもレビュー結果は返す
-		// TODO: ログ実装後に警告を出す
 	}
 
 	return &ReviewCodeOutput{
@@ -105,14 +109,11 @@ func (uc *ReviewCodeUseCase) Execute(ctx context.Context, input ReviewCodeInput)
 // updateKnowledgeUsage - ナレッジの使用カウントと最終使用日時を更新
 func (uc *ReviewCodeUseCase) updateKnowledgeUsage(ctx context.Context, knowledges []*model.Knowledge) error {
 	for _, k := range knowledges {
-		// IncrementUsage()を使って更新
 		k.IncrementUsage()
-
 		if err := uc.knowledgeRepo.Update(ctx, k); err != nil {
 			return fmt.Errorf("failed to update knowledge %s: %w", k.ID, err)
 		}
 	}
-
 	return nil
 }
 

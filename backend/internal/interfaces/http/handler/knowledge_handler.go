@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/s7r8/reviewapp/internal/application/usecase/knowledge"
+	"github.com/s7r8/reviewapp/internal/interfaces/http/response"
 )
 
 // KnowledgeHandler - ナレッジ関連のHTTPハンドラ
@@ -32,20 +33,13 @@ type CreateKnowledgeRequest struct {
 	Priority int    `json:"priority" validate:"required,min=1,max=5"`
 }
 
-// ErrorResponse - エラーレスポンス
-type ErrorResponse struct {
-	Error   string                 `json:"error"`
-	Message string                 `json:"message"`
-	Details map[string]interface{} `json:"details,omitempty"`
-}
-
 // CreateKnowledge - ナレッジ作成エンドポイント
 // POST /api/v1/knowledge
 func (h *KnowledgeHandler) CreateKnowledge(c echo.Context) error {
 	// 1. リクエストボディをパース
 	var req CreateKnowledgeRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, ErrorResponse{
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
 			Error:   "invalid_request",
 			Message: "リクエストボディが不正です",
 		})
@@ -53,7 +47,7 @@ func (h *KnowledgeHandler) CreateKnowledge(c echo.Context) error {
 
 	// 2. バリデーション
 	if err := validateCreateKnowledgeRequest(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, ErrorResponse{
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
 			Error:   "validation_error",
 			Message: err.Error(),
 		})
@@ -73,7 +67,7 @@ func (h *KnowledgeHandler) CreateKnowledge(c echo.Context) error {
 	})
 	if err != nil {
 		// ドメインエラー（バリデーションエラー）
-		return c.JSON(http.StatusBadRequest, ErrorResponse{
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
 			Error:   "validation_error",
 			Message: err.Error(),
 		})
@@ -113,7 +107,7 @@ func (h *KnowledgeHandler) ListKnowledge(c echo.Context) error {
 	// 2. カテゴリのバリデーション
 	if category != "" {
 		if err := validateCategory(category); err != nil {
-			return c.JSON(http.StatusBadRequest, ErrorResponse{
+			return c.JSON(http.StatusBadRequest, response.ErrorResponse{
 				Error:   "validation_error",
 				Message: err.Error(),
 			})
@@ -130,7 +124,7 @@ func (h *KnowledgeHandler) ListKnowledge(c echo.Context) error {
 	})
 	if err != nil {
 		// DBエラーなど
-		return c.JSON(http.StatusInternalServerError, ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
 			Error:   "internal_error",
 			Message: "サーバーエラーが発生しました",
 		})

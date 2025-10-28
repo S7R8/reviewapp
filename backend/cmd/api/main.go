@@ -27,7 +27,7 @@ func main() {
 	}
 
 	fmt.Printf("🚀 Starting ReviewApp API (env: %s)\n", cfg.Env)
-	
+
 	// デバッグ: APIキーの確認
 	if cfg.LLM.ClaudeAPIKey == "" {
 		log.Println("⚠️  WARNING: CLAUDE_API_KEY is not set!")
@@ -59,7 +59,13 @@ func main() {
 	// ミドルウェア
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.Use(middleware.CORS())
+
+	// CORS設定（開発環境用）
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"http://localhost:5173", "http://localhost:3000"},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
+	}))
 
 	// ヘルスチェック
 	e.GET("/health", func(c echo.Context) error {
@@ -96,7 +102,8 @@ func main() {
 	// ナレッジエンドポイント
 	api.POST("/knowledge", knowledgeHandler.CreateKnowledge) // KN-001: ナレッジ作成
 	api.GET("/knowledge", knowledgeHandler.ListKnowledge)    // KN-002: ナレッジ一覧取得
-	api.POST("/review", reviewHandler.ReviewCode)            // RV-001: コードレビュー実行
+
+	api.POST("/reviews", reviewHandler.ReviewCode) // RV-001: コードレビュー実行
 
 	// 5. サーバー起動（グレースフルシャットダウン対応）
 	go func() {
@@ -104,6 +111,7 @@ func main() {
 		fmt.Printf("📍 Server listening on %s\n", addr)
 		fmt.Printf("💡 API Endpoint: http://localhost:%s/api/v1\n", cfg.Server.Port)
 		fmt.Printf("🏥 Health Check: http://localhost:%s/health\n", cfg.Server.Port)
+		fmt.Printf("🌐 CORS: Allowing localhost:5173, localhost:3000\n")
 
 		if err := e.Start(addr); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("shutting down the server: ", err)

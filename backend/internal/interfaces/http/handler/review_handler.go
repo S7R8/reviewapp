@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/s7r8/reviewapp/internal/application/usecase/review"
+	"github.com/s7r8/reviewapp/internal/interfaces/http/response"
 )
 
 // ReviewHandler - レビューハンドラー
@@ -32,7 +33,7 @@ func (h *ReviewHandler) ReviewCode(c echo.Context) error {
 
 	// 2. バリデーション
 	if err := validateReviewCodeRequest(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, ErrorResponse{
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
 			Error:   "validation_error",
 			Message: err.Error(),
 		})
@@ -53,21 +54,41 @@ func (h *ReviewHandler) ReviewCode(c echo.Context) error {
 	if err != nil {
 		// エラーの詳細をログに出力
 		c.Logger().Errorf("ReviewCode failed: %v", err)
-
-		return c.JSON(http.StatusInternalServerError, ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
 			Error:   "internal_error",
 			Message: "サーバーエラーが発生しました",
 		})
 	}
 
-	// レスポンスを構築
-	response := ReviewCodeResponse{
+	// 構造化データを含めてレスポンス
+	var structuredResult *StructuredReviewResult
+	if output.Review.StructuredResult != nil {
+		structuredResult = &StructuredReviewResult{
+			Summary:    output.Review.StructuredResult.Summary,
+			GoodPoints: output.Review.StructuredResult.GoodPoints,
+			Improvements: func() []Improvement {
+				improvements := make([]Improvement, len(output.Review.StructuredResult.Improvements))
+				for i, imp := range output.Review.StructuredResult.Improvements {
+					improvements[i] = Improvement{
+						Title:       imp.Title,
+						Description: imp.Description,
+						CodeAfter:   imp.CodeAfter,
+						Severity:    imp.Severity,
+					}
+				}
+				return improvements
+			}(),
+		}
+	}
+
+	responseData := ReviewCodeResponse{
 		ID:               output.Review.ID,
 		UserID:           output.Review.UserID,
 		Code:             output.Review.Code,
 		Language:         output.Review.Language,
 		Context:          output.Review.Context,
 		ReviewResult:     output.Review.ReviewResult,
+		StructuredResult: structuredResult,
 		UsedKnowledgeIDs: output.Review.ReferencedKnowledge,
 		LLMProvider:      output.Review.LLMProvider,
 		LLMModel:         output.Review.LLMModel,
@@ -77,8 +98,7 @@ func (h *ReviewHandler) ReviewCode(c echo.Context) error {
 
 	// ヘッダーにAPI Codeを追加
 	c.Response().Header().Set("X-API-Code", "RV-001")
-
-	return c.JSON(http.StatusCreated, response)
+	return c.JSON(http.StatusCreated, responseData)
 }
 
 // バリデーション
@@ -102,16 +122,32 @@ type ReviewCodeRequest struct {
 
 // ReviewCodeResponse - レスポンス
 type ReviewCodeResponse struct {
-	ID               string    `json:"id"`
-	UserID           string    `json:"user_id"`
-	Code             string    `json:"code"`
-	Language         string    `json:"language"`
-	FileName         string    `json:"file_name,omitempty"`
-	Context          string    `json:"context,omitempty"`
-	ReviewResult     string    `json:"review_result"`
-	UsedKnowledgeIDs []string  `json:"used_knowledge_ids"`
-	LLMProvider      string    `json:"llm_provider"`
-	LLMModel         string    `json:"llm_model"`
-	TokensUsed       int       `json:"tokens_used"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID               string                  `json:"id"`
+	UserID           string                  `json:"user_id"`
+	Code             string                  `json:"code"`
+	Language         string                  `json:"language"`
+	FileName         string                  `json:"file_name,omitempty"`
+	Context          string                  `json:"context,omitempty"`
+	ReviewResult     string                  `json:"review_result"`
+	StructuredResult *StructuredReviewResult `json:"structured_result,omitempty"`
+	UsedKnowledgeIDs []string                `json:"used_knowledge_ids"`
+	LLMProvider      string                  `json:"llm_provider"`
+	LLMModel         string                  `json:"llm_model"`
+	TokensUsed       int                     `json:"tokens_used"`
+	CreatedAt        time.Time               `json:"created_at"`
+}
+
+// StructuredReviewResult - 構造化されたレビュー結果（レスポンス用）
+type StructuredReviewResult struct {
+	Summary      string        `json:"summary"`
+	GoodPoints   []string      `json:"good_points"`
+	Improvements []Improvement `json:"improvements"`
+}
+
+// Improvement - 改善点（レスポンス用）
+type Improvement struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	CodeAfter   string `json:"code_after,omitempty"`
+	Severity    string `json:"severity"`
 }

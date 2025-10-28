@@ -8,21 +8,37 @@ import (
 
 // Review - コードレビューエンティティ
 type Review struct {
-	ID                  string     `json:"id"`
-	UserID              string     `json:"user_id"`
-	Code                string     `json:"code"`     // レビュー対象のコード
-	Language            string     `json:"language"` // プログラミング言語
-	Context             string     `json:"context,omitempty"`  // 追加コンテキスト（オプション）
-	ReviewResult        string     `json:"review_result"`        // AIのレビュー結果
-	ReferencedKnowledge []string   `json:"referenced_knowledge"` // 参照したナレッジID（中間テーブルから取得）
-	LLMProvider         string     `json:"llm_provider"`         // LLMプロバイダー（claude, openai）
-	LLMModel            string     `json:"llm_model"`            // モデル名
-	TokensUsed          int        `json:"tokens_used"`          // 使用トークン数
-	FeedbackScore       *int       `json:"feedback_score,omitempty"`       // ユーザーのフィードバック（1-5）
-	FeedbackComment     string     `json:"feedback_comment,omitempty"`     // フィードバックコメント
-	CreatedAt           time.Time  `json:"created_at"`
-	UpdatedAt           time.Time  `json:"updated_at"`
-	DeletedAt           *time.Time `json:"deleted_at,omitempty"` // 論理削除
+	ID                  string                  `json:"id"`
+	UserID              string                  `json:"user_id"`
+	Code                string                  `json:"code"`
+	Language            string                  `json:"language"`
+	Context             string                  `json:"context,omitempty"`
+	ReviewResult        string                  `json:"review_result"`                  // マークダウン（元データ）
+	StructuredResult    *StructuredReviewResult `json:"structured_result,omitempty"`    // 構造化データ
+	ReferencedKnowledge []string                `json:"referenced_knowledge"`
+	LLMProvider         string                  `json:"llm_provider"`
+	LLMModel            string                  `json:"llm_model"`
+	TokensUsed          int                     `json:"tokens_used"`
+	FeedbackScore       *int                    `json:"feedback_score,omitempty"`
+	FeedbackComment     string                  `json:"feedback_comment,omitempty"`
+	CreatedAt           time.Time               `json:"created_at"`
+	UpdatedAt           time.Time               `json:"updated_at"`
+	DeletedAt           *time.Time              `json:"deleted_at,omitempty"`
+}
+
+// StructuredReviewResult - 構造化されたレビュー結果
+type StructuredReviewResult struct {
+	Summary      string        `json:"summary"`
+	GoodPoints   []string      `json:"good_points"`
+	Improvements []Improvement `json:"improvements"`
+}
+
+// Improvement - 改善点
+type Improvement struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	CodeAfter   string `json:"code_after,omitempty"`
+	Severity    string `json:"severity"` // low, medium, high
 }
 
 // NewReview - レビューを生成
@@ -39,8 +55,9 @@ func NewReview(userID, code, language, context string) *Review {
 }
 
 // SetReviewResult - レビュー結果を設定
-func (r *Review) SetReviewResult(result string, knowledgeIDs []string, llmProvider, llmModel string, tokensUsed int) {
+func (r *Review) SetReviewResult(result string, structuredResult *StructuredReviewResult, knowledgeIDs []string, llmProvider, llmModel string, tokensUsed int) {
 	r.ReviewResult = result
+	r.StructuredResult = structuredResult
 	r.ReferencedKnowledge = knowledgeIDs
 	r.LLMProvider = llmProvider
 	r.LLMModel = llmModel

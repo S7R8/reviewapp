@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -66,7 +67,19 @@ func (r *Review) SetReviewResult(result string, structuredResult *StructuredRevi
 }
 
 // SetFeedback - ユーザーフィードバックを設定
-func (r *Review) SetFeedback(score int) {
+func (r *Review) SetFeedback(score int, comment string) error {
+	// スコアのバリデーション
+	if score < 1 || score > 3 {
+		return fmt.Errorf("スコアは1-3の整数で指定してください")
+	}
+	
+	// コメントの長さチェック
+	if len(comment) > 500 {
+		return fmt.Errorf("コメントは500文字以内にしてください")
+	}
+	
 	r.FeedbackScore = &score
+	r.FeedbackComment = comment
 	r.UpdatedAt = time.Now()
+	return nil
 }

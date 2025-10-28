@@ -7,9 +7,14 @@ interface ReviewState {
   relatedKnowledge: Knowledge[];
   isLoading: boolean;
   error: string | null;
+  feedbackScore: number | null;
+  isSubmittingFeedback: boolean;
   
   // レビュー実行（実際のAPI呼び出し）
   executeReview: (code: string, language: string, filename: string) => Promise<void>;
+  
+  // フィードバック送信
+  submitFeedback: (score: number, comment?: string) => Promise<void>;
   
   // リセット
   reset: () => void;
@@ -42,11 +47,13 @@ const generateMockKnowledge = (): Knowledge[] => {
   ];
 };
 
-export const useReviewStore = create<ReviewState>((set) => ({
+export const useReviewStore = create<ReviewState>((set, get) => ({
   currentReview: null,
   relatedKnowledge: [],
   isLoading: false,
   error: null,
+  feedbackScore: null,
+  isSubmittingFeedback: false,
 
   executeReview: async (code: string, language: string, filename: string) => {
     set({ isLoading: true, error: null });
@@ -66,6 +73,7 @@ export const useReviewStore = create<ReviewState>((set) => ({
         currentReview: review,
         relatedKnowledge: mockKnowledge,
         isLoading: false,
+        feedbackScore: null, // リセット
       });
     } catch (error) {
       console.error('レビュー実行エラー:', error);
@@ -77,12 +85,36 @@ export const useReviewStore = create<ReviewState>((set) => ({
     }
   },
 
+  submitFeedback: async (score: number, comment?: string) => {
+    const { currentReview } = get();
+    if (!currentReview) {
+      console.error('レビューが存在しません');
+      return;
+    }
+
+    set({ isSubmittingFeedback: true });
+
+    try {
+      await reviewApiClient.updateFeedback(currentReview.id, score, comment);
+      set({ 
+        feedbackScore: score,
+        isSubmittingFeedback: false,
+      });
+      console.log('フィードバックを送信しました:', { score, comment });
+    } catch (error) {
+      console.error('フィードバックの送信に失敗しました:', error);
+      set({ isSubmittingFeedback: false });
+    }
+  },
+
   reset: () => {
     set({
       currentReview: null,
       relatedKnowledge: [],
       isLoading: false,
       error: null,
+      feedbackScore: null,
+      isSubmittingFeedback: false,
     });
   },
 }));

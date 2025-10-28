@@ -314,3 +314,30 @@ func (r *ReviewRepository) Delete(ctx context.Context, id string) error {
 func (r *ReviewRepository) FindRecentByUserID(ctx context.Context, userID string, limit int) ([]*model.Review, error) {
 	return r.FindByUserID(ctx, userID, limit)
 }
+
+// UpdateFeedback - フィードバックを更新
+func (r *ReviewRepository) UpdateFeedback(ctx context.Context, reviewID string, score int, comment string) error {
+	query := `
+		UPDATE reviews
+		SET feedback_score = $1,
+		    feedback_comment = $2,
+		    updated_at = NOW()
+		WHERE id = $3 AND deleted_at IS NULL
+	`
+
+	result, err := r.db.ExecContext(ctx, query, score, comment, reviewID)
+	if err != nil {
+		return fmt.Errorf("failed to update feedback: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("レビューが見つかりません: %s", reviewID)
+	}
+
+	return nil
+}

@@ -58,6 +58,24 @@ class ReviewApiClient {
       rawMarkdown: data.review_result,
     };
   }
+
+  async updateFeedback(reviewId: string, score: number, comment?: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/v1/reviews/${reviewId}/feedback`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        score,
+        comment: comment || '',
+      }),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.message || 'フィードバックの送信に失敗しました');
+    }
+  }
 }
 
 export const reviewApiClient = new ReviewApiClient();

@@ -175,6 +175,90 @@ func (m *MockReviewRepository) UpdateFeedback(ctx context.Context, reviewID stri
 	return nil
 }
 
+// MockUserRepository - ユーザーリポジトリのモック
+type MockUserRepository struct {
+	users map[string]*model.User // key: auth0_user_id
+	err   error
+}
+
+func NewMockUserRepository() *MockUserRepository {
+	return &MockUserRepository{
+		users: make(map[string]*model.User),
+	}
+}
+
+func (m *MockUserRepository) SetError(err error) {
+	m.err = err
+}
+
+func (m *MockUserRepository) SetUser(user *model.User) {
+	m.users[user.Auth0UserID] = user
+}
+
+func (m *MockUserRepository) Create(ctx context.Context, user *model.User) error {
+	if m.err != nil {
+		return m.err
+	}
+	m.users[user.Auth0UserID] = user
+	return nil
+}
+
+func (m *MockUserRepository) FindByID(ctx context.Context, id string) (*model.User, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	for _, user := range m.users {
+		if user.ID == id {
+			return user, nil
+		}
+	}
+	return nil, errors.New("user not found")
+}
+
+func (m *MockUserRepository) FindByEmail(ctx context.Context, email string) (*model.User, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	for _, user := range m.users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+	return nil, errors.New("user not found")
+}
+
+func (m *MockUserRepository) FindByAuth0UserID(ctx context.Context, auth0UserID string) (*model.User, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	user, ok := m.users[auth0UserID]
+	if !ok {
+		return nil, errors.New("user not found")
+	}
+	return user, nil
+}
+
+func (m *MockUserRepository) Update(ctx context.Context, user *model.User) error {
+	if m.err != nil {
+		return m.err
+	}
+	m.users[user.Auth0UserID] = user
+	return nil
+}
+
+func (m *MockUserRepository) Delete(ctx context.Context, id string) error {
+	if m.err != nil {
+		return m.err
+	}
+	for auth0ID, user := range m.users {
+		if user.ID == id {
+			delete(m.users, auth0ID)
+			return nil
+		}
+	}
+	return errors.New("user not found")
+}
+
 // ClaudeClientInterface - Claude Clientのインターフェース
 type ClaudeClientInterface interface {
 	ReviewCode(ctx context.Context, input external.ReviewCodeInput) (*external.ReviewCodeOutput, error)

@@ -17,6 +17,9 @@ type UserRepository interface {
 	// FindByEmail - メールアドレスでユーザーを取得
 	FindByEmail(ctx context.Context, email string) (*model.User, error)
 
+	// FindByAuth0UserID - Auth0ユーザーIDでユーザーを取得
+	FindByAuth0UserID(ctx context.Context, auth0UserID string) (*model.User, error)
+
 	// Update - ユーザーを更新
 	Update(ctx context.Context, user *model.User) error
 

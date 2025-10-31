@@ -5,7 +5,9 @@ import { Mail, Lock, Eye, EyeOff, Hexagon, User } from 'lucide-react';
 
 export default function Signup() {
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
+  const signup = useAuthStore((state) => state.signup);
+  const storeError = useAuthStore((state) => state.error);
+  const clearError = useAuthStore((state) => state.clearError);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -19,6 +21,7 @@ export default function Signup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    clearError();
 
     // パスワード確認
     if (password !== confirmPassword) {
@@ -26,21 +29,21 @@ export default function Signup() {
       return;
     }
 
+    // パスワードの強度チェック（Auth0の要件）
+    if (password.length < 8) {
+      setError('パスワードは8文字以上である必要があります');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // TODO: サインアップAPI呼び出し（現在は仮実装）
-      console.log('仮サインアップ:', { name, email, password });
-      
-      // 1秒待つ
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // サインアップ成功後、自動ログイン
-      await login(email, password);
+      // Auth0でサインアップ + 自動ログイン
+      await signup(email, password, name);
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('サインアップエラー:', error);
-      setError('サインアップに失敗しました');
+      setError(error.message || 'サインアップに失敗しました');
     } finally {
       setIsLoading(false);
     }

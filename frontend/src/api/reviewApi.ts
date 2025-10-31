@@ -1,40 +1,37 @@
 import { ReviewResult, ReviewRequest } from '../types/review';
+import { apiPost, apiPut } from './client';
 
-const API_BASE_URL = 'http://localhost:8080';
-
-interface ApiError {
-  error: string;
-  message: string;
-  details?: Record<string, unknown>;
+interface ApiReviewResponse {
+  id: string;
+  user_id: string;
+  code: string;
+  language: string;
+  file_name: string | null;
+  review_result: string;
+  structured_result?: {
+    summary: string;
+    good_points: string[];
+    improvements: Array<{
+      title: string;
+      description: string;
+      code_after: string;
+      severity: string;
+    }>;
+  };
+  feedback_score: number | null;
+  feedback_comment: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 class ReviewApiClient {
-  private baseUrl: string;
-
-  constructor(baseUrl: string = API_BASE_URL) {
-    this.baseUrl = baseUrl;
-  }
-
   async reviewCode(request: ReviewRequest): Promise<ReviewResult> {
-    const response = await fetch(`${this.baseUrl}/api/v1/reviews`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        code: request.code,
-        language: request.language,
-        file_name: request.filename || null,
-        context: null,
-      }),
+    const data = await apiPost<ApiReviewResponse>('/api/v1/reviews', {
+      code: request.code,
+      language: request.language,
+      file_name: request.filename || null,
+      context: null,
     });
-
-    if (!response.ok) {
-      const error: ApiError = await response.json();
-      throw new Error(error.message || 'レビューの実行に失敗しました');
-    }
-
-    const data = await response.json();
 
     // バックエンドから構造化データを受け取る
     const structured = data.structured_result || {
@@ -60,21 +57,10 @@ class ReviewApiClient {
   }
 
   async updateFeedback(reviewId: string, score: number, comment?: string): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/api/v1/reviews/${reviewId}/feedback`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        score,
-        comment: comment || '',
-      }),
+    await apiPut(`/api/v1/reviews/${reviewId}/feedback`, {
+      score,
+      comment: comment || '',
     });
-
-    if (!response.ok) {
-      const error: ApiError = await response.json();
-      throw new Error(error.message || 'フィードバックの送信に失敗しました');
-    }
   }
 }
 

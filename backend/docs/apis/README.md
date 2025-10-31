@@ -6,11 +6,18 @@
 [カテゴリ]-[連番]_[機能名].md
 
 カテゴリ:
+- AU: Auth（認証）
 - KN: Knowledge（ナレッジ）
 - RV: Review（レビュー）
 - US: User（ユーザー）
 - TG: Tag（タグ）
 ```
+
+## Auth APIs
+
+| API Code | Method | Endpoint | 概要 | Status | ドキュメント |
+|----------|--------|----------|------|--------|-------------|
+| AU-001 | POST | /api/v1/auth/sync | ユーザー同期（初回ログイン） | ✅ 完了 | [AU-001](./AU-001_user_sync.md) |
 
 ## Knowledge APIs
 

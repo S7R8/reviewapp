@@ -4,20 +4,27 @@ import "time"
 
 // User - ユーザーエンティティ
 type User struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID           string     `json:"id"`
+	Auth0UserID  string     `json:"auth0_user_id"`  // Auth0のユーザーID
+	Email        string     `json:"email"`
+	Name         string     `json:"name"`
+	AvatarURL    *string    `json:"avatar_url"`     // Auth0のpicture
+	Preferences  string     `json:"preferences"`    // JSONB
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
 }
 
 // NewUser - ユーザーを生成（ファクトリーメソッド）
-func NewUser(email, name string) *User {
+func NewUser(auth0UserID, email, name string) *User {
+	now := time.Now()
 	return &User{
-		Email:     email,
-		Name:      name,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Auth0UserID: auth0UserID,
+		Email:       email,
+		Name:        name,
+		Preferences: "{}",
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 }
 

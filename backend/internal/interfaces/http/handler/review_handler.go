@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/s7r8/reviewapp/internal/application/usecase/review"
+	"github.com/s7r8/reviewapp/internal/interfaces/http/middleware"
 	"github.com/s7r8/reviewapp/internal/interfaces/http/response"
 )
 
@@ -44,8 +45,14 @@ func (h *ReviewHandler) ReviewCode(c echo.Context) error {
 		})
 	}
 
-	// TODO: 認証からUserIDを取得（Phase 1は固定）
-	userID := "00000000-0000-0000-0000-000000000001"
+	// 3. ユーザーIDを取得
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, response.ErrorResponse{
+			Error:   "unauthorized",
+			Message: "ユーザー情報が見つかりません。/auth/syncを先に呼び出してください。",
+		})
+	}
 
 	// Usecaseを実行
 	input := review.ReviewCodeInput{
@@ -192,8 +199,14 @@ func (h *ReviewHandler) UpdateFeedback(c echo.Context) error {
 		})
 	}
 
-	// 4. UserID取得（Phase 1は固定）
-	userID := "00000000-0000-0000-0000-000000000001"
+	// 4. ユーザーIDを取得
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, response.ErrorResponse{
+			Error:   "unauthorized",
+			Message: "ユーザー情報が見つかりません。/auth/syncを先に呼び出してください。",
+		})
+	}
 
 	// 5. UseCase実行
 	input := review.UpdateFeedbackInput{

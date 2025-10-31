@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/s7r8/reviewapp/internal/application/usecase/knowledge"
+	"github.com/s7r8/reviewapp/internal/interfaces/http/middleware"
 	"github.com/s7r8/reviewapp/internal/interfaces/http/response"
 )
 
@@ -53,9 +54,14 @@ func (h *KnowledgeHandler) CreateKnowledge(c echo.Context) error {
 		})
 	}
 
-	// 3. ユーザーIDを取得（TODO: JWTから取得、現在は固定）
-	// 本来はミドルウェアでJWTを検証し、c.Get("user_id")で取得
-	userID := "00000000-0000-0000-0000-000000000001" // 開発用固定値
+	// 3. ユーザーIDを取得
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, response.ErrorResponse{
+			Error:   "unauthorized",
+			Message: "ユーザー情報が見つかりません。/auth/syncを先に呼び出してください。",
+		})
+	}
 
 	// 4. UseCase実行
 	output, err := h.createKnowledgeUC.Execute(c.Request().Context(), knowledge.CreateKnowledgeInput{
@@ -114,8 +120,14 @@ func (h *KnowledgeHandler) ListKnowledge(c echo.Context) error {
 		}
 	}
 
-	// 3. ユーザーIDを取得（TODO: JWTから取得、現在は固定）
-	userID := "00000000-0000-0000-0000-000000000001" // 開発用固定値
+	// 3. ユーザーIDを取得
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, response.ErrorResponse{
+			Error:   "unauthorized",
+			Message: "ユーザー情報が見つかりません。/auth/syncを先に呼び出してください。",
+		})
+	}
 
 	// 4. UseCase実行
 	output, err := h.listKnowledgeUC.Execute(c.Request().Context(), knowledge.ListKnowledgeInput{

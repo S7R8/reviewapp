@@ -1,35 +1,72 @@
-export interface ReviewResult {
+/**
+ * レビューステータスの型定義
+ */
+export type ReviewStatus = 'success' | 'warning' | 'error' | 'pending';
+
+/**
+ * プログラミング言語の型定義
+ */
+export type ProgrammingLanguage = 
+  | 'TypeScript'
+  | 'JavaScript'
+  | 'Python'
+  | 'Go'
+  | 'Java'
+  | 'C++'
+  | 'C#'
+  | 'Ruby'
+  | 'PHP'
+  | 'Rust'
+  | 'Swift'
+  | 'Kotlin'
+  | 'SCSS'
+  | 'CSS'
+  | 'HTML'
+  | 'Markdown'
+  | 'Other';
+
+/**
+ * レビュー履歴アイテムの型定義
+ */
+export interface ReviewHistoryItem {
   id: string;
-  summary: string;
-  goodPoints: string[];
-  improvements: Improvement[];
-  references: Reference[];
-  createdAt: string;
-  rawMarkdown: string;
+  createdAt: string; // ISO 8601 format
+  language: ProgrammingLanguage;
+  status: ReviewStatus;
+  reviewContent?: string;
+  knowledgeReferences?: string[]; // 参照されたナレッジのID
 }
 
-export interface Improvement {
-  title: string;
-  description: string;
-  codeAfter?: string;
-  severity: 'low' | 'medium' | 'high';
+/**
+ * レビュー履歴リストのレスポンス型
+ */
+export interface ReviewHistoryListResponse {
+  items: ReviewHistoryItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
-export interface Reference {
-  source: string;
-  description: string;
+/**
+ * レビュー履歴の検索・フィルター条件
+ */
+export interface ReviewHistoryFilter {
+  language?: ProgrammingLanguage;
+  status?: ReviewStatus;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: 'createdAt' | 'language' | 'status';
+  sortOrder?: 'asc' | 'desc';
 }
 
-export interface Knowledge {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  tags: string[];
-}
-
-export interface ReviewRequest {
-  code: string;
-  language: string;
-  filename: string;
+/**
+ * ステータスバッジの設定
+ */
+export interface StatusBadgeConfig {
+  label: string;
+  bgColor: string;
+  textColor: string;
 }

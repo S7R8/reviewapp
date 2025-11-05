@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import CodeReview from './pages/CodeReview';
+import HistoryPage from './pages/HistoryPage';
 
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
@@ -21,6 +22,8 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/review" element={<CodeReview />} />
+        <Route path="/review/:id" element={<CodeReview />} />
+        <Route path="/history" element={<HistoryPage />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

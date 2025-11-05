@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { 
-  Code, 
-  Book, 
-  History, 
-  Settings, 
-  LogOut, 
+import {
+  Code,
+  Book,
+  History,
+  Settings,
+  LogOut,
   BarChart3,
   Plus,
   Menu,
@@ -40,7 +40,7 @@ export default function Sidebar({ currentPage, isOpen, onToggle }: SidebarProps)
   }
 
   return (
-    <aside className="flex w-64 flex-col bg-white border-r border-gray-200 p-4 relative animate-slide-in-left">
+    <aside className="flex w-64 flex-col bg-white border-r border-gray-200 p-4 relative">
       {/* 閉じるボタン（モバイル用） */}
       <button
         onClick={onToggle}
@@ -69,16 +69,15 @@ export default function Sidebar({ currentPage, isOpen, onToggle }: SidebarProps)
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
-            
+
             return (
               <button
                 key={item.id}
                 onClick={() => navigate(item.path)}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive
                     ? 'bg-[#F4C753]/20 text-[#111827]'
                     : 'text-[#6B7280] hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 <Icon size={20} />
                 <p className="text-sm font-medium">{item.label}</p>
@@ -90,7 +89,7 @@ export default function Sidebar({ currentPage, isOpen, onToggle }: SidebarProps)
 
       {/* 下部ボタン */}
       <div className="mt-auto flex flex-col gap-4">
-        <button 
+        <button
           onClick={() => navigate('/review')}
           className="flex items-center justify-center gap-2 w-full h-10 px-4 bg-[#FBBF24] text-[#111827] rounded-lg font-bold text-sm hover:bg-amber-400 transition-colors"
         >

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+
+<html lang="ja"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AIコードレビュー詳細</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans+JP:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Manrope', 'Noto Sans JP', sans-serif;
+        }
+        .material-symbols-outlined {
+          font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24
+        }
+    </style>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {primary: "#F4C753", accent: "#FBBF24", "background-light": "#f8f7f6", "background-dark": "#221d10", "text-light": "#111827", "text-dark": "#F9FAFB", "muted-light": "#6B7280", "muted-dark": "#9CA3AF", "border-light": "#E5E7EB", "border-dark": "#374151"}, fontFamily: {display: "Manrope"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}}}};</script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark">
+<div class="relative flex min-h-screen w-full flex-col">
+<header class="sticky top-0 z-20 flex items-center justify-between whitespace-nowrap border-b border-solid border-border-light dark:border-border-dark bg-white/80 dark:bg-background-dark/80 backdrop-blur-sm px-6 lg:px-10 py-3">
+<div class="flex items-center gap-4">
+<div class="size-6 text-primary">
+<svg fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<h1 class="text-lg font-bold tracking-tight">AI Code Review</h1>
+</div>
+<div class="flex flex-1 justify-end items-center gap-6">
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">ダッシュボード</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">レビュー履歴</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">ナレッジベース</a>
+</nav>
+<button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-5 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-colors">
+<span class="truncate">新規レビュー</span>
+</button>
+<button class="size-10 rounded-full bg-center bg-no-repeat bg-cover border-2 border-border-light dark:border-border-dark" data-alt="User avatar" style='background-image: url("https://placeholder.pics/svg/300/E5E7EB/111827/User");'></button>
+</div>
+</header>
+<main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="flex flex-wrap justify-between items-start gap-4 mb-8">
+<div class="flex min-w-72 flex-col gap-2">
+<p class="text-3xl font-bold tracking-tight">コードレビュー詳細</p>
+<p class="text-muted-light dark:text-muted-dark text-sm">AIによるコードレビューの結果と改善提案を確認できます。</p>
+</div>
+<button class="inline-flex items-center justify-center gap-2 h-10 px-5 bg-white dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-full text-sm font-medium hover:bg-background-light dark:hover:bg-gray-700 transition-colors">
+<span class="material-symbols-outlined text-base">library_books</span>
+                    関連ナレッジ
+                </button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 lg:gap-8">
+<!-- Left Column -->
+<div class="lg:sticky lg:top-24 h-fit">
+<div class="bg-white dark:bg-gray-800/50 border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
+<div class="px-6 py-5 border-b border-border-light dark:border-border-dark">
+<h2 class="text-xl font-bold">対象コード</h2>
+</div>
+<div class="p-6 grid grid-cols-[auto_1fr] gap-x-6 gap-y-4">
+<p class="text-muted-light dark:text-muted-dark text-sm font-medium">言語</p>
+<p class="text-sm font-semibold">Python</p>
+<p class="text-muted-light dark:text-muted-dark text-sm font-medium">レビュー日時</p>
+<p class="text-sm">2023/10/27 15:30</p>
+<p class="text-muted-light dark:text-muted-dark text-sm font-medium">改善提案</p>
+<div class="flex items-center">
+<span class="bg-accent/20 text-accent-800 dark:bg-accent/30 dark:text-accent-200 text-xs font-bold px-2 py-0.5 rounded-full">3件</span>
+</div>
+</div>
+<div class="bg-gray-900 p-4 font-mono text-sm text-white overflow-x-auto">
+<pre><code class="language-python"><span class="text-purple-400">def</span> <span class="text-blue-400">unnecessary_variable</span>():
+    data = fetch_data()
+    processed_data = process(data)
+    <span class="text-purple-400">return</span> processed_data <span class="text-gray-500"># 'processedData' is redundant</span></code></pre>
+</div>
+</div>
+</div>
+<!-- Right Column -->
+<div class="flex flex-col gap-6 mt-8 lg:mt-0">
+<h2 class="text-xl font-bold">レビュー結果</h2>
+<!-- Review Item 1 -->
+<div class="bg-white dark:bg-gray-800/50 border border-border-light dark:border-border-dark rounded-lg p-6 flex flex-col gap-5">
+<div class="flex items-center gap-3">
+<span class="flex items-center justify-center size-7 bg-primary text-white rounded-full font-bold text-sm">1</span>
+<h3 class="text-lg font-bold">不要な変数宣言</h3>
+</div>
+<div>
+<p class="text-sm text-muted-light dark:text-muted-dark mb-2 font-medium">問題の説明</p>
+<p class="text-sm leading-relaxed">`processed_data` 変数は、`process(data)` の結果をすぐに `return` するためだけに存在しており冗長です。中間変数をなくすことで、コードがより簡潔になり、可読性が向上します。</p>
+</div>
+<div>
+<p class="text-sm text-muted-light dark:text-muted-dark mb-2 font-medium">改善案</p>
+<div class="bg-gray-900 rounded p-4 font-mono text-sm text-white overflow-x-auto">
+<pre><code class="language-python"><span class="text-purple-400">def</span> <span class="text-blue-400">unnecessary_variable</span>():
+    data = fetch_data()
+    <span class="text-purple-400">return</span> process(data)</code></pre>
+</div>
+</div>
+<!-- Accordion -->
+<div>
+<details class="group">
+<summary class="flex items-center gap-2 cursor-pointer text-sm font-medium text-primary hover:underline">
+<span class="material-symbols-outlined text-lg">menu_book</span>
+<span>根拠を見る</span>
+<span class="material-symbols-outlined text-lg transition-transform group-open:rotate-180">expand_more</span>
+</summary>
+<div class="mt-4 ml-1 pl-4 border-l-2 border-border-light dark:border-border-dark text-sm space-y-3">
+<p class="font-semibold">変数のスコープは最小限に</p>
+<p class="text-muted-light dark:text-muted-dark text-xs">一度しか使われない変数は、コードの可読性を低下させる可能性があります。</p>
+<p class="text-muted-light dark:text-muted-dark text-xs">関連レビュー: 2023/09/15</p>
+</div>
+</details>
+</div>
+<div class="border-t border-border-light dark:border-border-dark pt-5 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium">この提案は役に立ちましたか？</p>
+<div class="flex items-center gap-2">
+<button aria-label="Good suggestion" class="flex items-center justify-center size-9 rounded-full border border-border-light dark:border-border-dark hover:bg-background-light dark:hover:bg-gray-700 transition-colors">
+<span class="material-symbols-outlined text-lg text-muted-light dark:text-muted-dark">thumb_up</span>
+</button>
+<button aria-label="Bad suggestion" class="flex items-center justify-center size-9 rounded-full border border-border-light dark:border-border-dark hover:bg-background-light dark:hover:bg-gray-700 transition-colors">
+<span class="material-symbols-outlined text-lg text-muted-light dark:text-muted-dark">thumb_down</span>
+</button>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<textarea class="w-full text-sm rounded border-border-light dark:border-border-dark bg-transparent focus:ring-primary focus:border-primary" placeholder="コメントを追加..." rows="3"></textarea>
+<div class="flex justify-end gap-3 mt-2">
+<button class="h-9 px-4 text-sm font-bold rounded-full border border-border-light dark:border-border-dark hover:bg-background-light dark:hover:bg-gray-700 transition-colors">保存</button>
+<button class="h-9 px-4 text-sm font-bold rounded-full bg-primary text-white hover:bg-primary/90 transition-colors">ナレッジ化</button>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-end gap-4 border-t border-border-light dark:border-border-dark pt-4 mt-1">
+<button class="flex items-center gap-1 text-sm text-muted-light dark:text-muted-dark hover:text-primary dark:hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-base">edit</span>
+                                編集
+                            </button>
+<button class="flex items-center gap-1 text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined text-base">delete</span>
+                                削除
+                            </button>
+</div>
+</div>
+<!-- Add more review items here -->
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
 import { ReviewHistoryItem } from '../types/review';
-import StatusBadge from './StatusBadge';
 
 interface ReviewHistoryTableProps {
   items: ReviewHistoryItem[];
@@ -74,7 +73,7 @@ const ReviewHistoryTable: React.FC<ReviewHistoryTableProps> = ({
               onClick={() => handleSort('createdAt')}
             >
               <div className="flex items-center gap-2">
-                <span>日付</span>
+                <span>レビュー日時</span>
                 {renderSortIcon('createdAt')}
               </div>
             </th>
@@ -89,14 +88,16 @@ const ReviewHistoryTable: React.FC<ReviewHistoryTableProps> = ({
               </div>
             </th>
             <th
-              className="px-6 py-4 text-xs font-semibold text-[#6B7280] uppercase tracking-wider cursor-pointer hover:text-[#111827] transition-colors"
+              className="px-6 py-4 text-xs font-semibold text-[#6B7280] uppercase tracking-wider"
               scope="col"
-              onClick={() => handleSort('status')}
             >
-              <div className="flex items-center gap-2">
-                <span>ステータス</span>
-                {renderSortIcon('status')}
-              </div>
+              コードプレビュー
+            </th>
+            <th
+              className="px-6 py-4 text-xs font-semibold text-[#6B7280] uppercase tracking-wider"
+              scope="col"
+            >
+              参照ナレッジ
             </th>
             <th className="relative px-6 py-4" scope="col">
               <span className="sr-only">Actions</span>
@@ -104,26 +105,46 @@ const ReviewHistoryTable: React.FC<ReviewHistoryTableProps> = ({
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
-          {items.map((item) => (
-            <tr
-              key={item.id}
-              onClick={() => onItemClick(item)}
-              className="hover:bg-gray-50 cursor-pointer transition-colors group"
-            >
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#111827]">
-                {formatDate(item.createdAt)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#111827] font-medium">
-                {item.language}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm">
-                <StatusBadge status={item.status} />
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#F4C753] transition-colors inline-block" />
-              </td>
-            </tr>
-          ))}
+          {items.map((item) => {
+            // コードプレビュー（最初の50文字）
+            const codePreview = item.reviewContent 
+              ? item.reviewContent.substring(0, 60) + (item.reviewContent.length > 60 ? '...' : '')
+              : 'コードなし';
+            
+            const knowledgeCount = item.knowledgeReferences?.length || 0;
+            
+            return (
+              <tr
+                key={item.id}
+                onClick={() => onItemClick(item)}
+                className="hover:bg-gray-50 cursor-pointer transition-colors group"
+              >
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#111827]">
+                  {formatDate(item.createdAt)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {item.language}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-sm text-[#6B7280] max-w-md truncate">
+                  <span className="font-mono text-xs">{codePreview}</span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#111827]">
+                  {knowledgeCount > 0 ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                      {knowledgeCount}件
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 text-xs">-</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#F4C753] transition-colors inline-block" />
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

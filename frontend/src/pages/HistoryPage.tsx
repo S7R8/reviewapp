@@ -8,7 +8,7 @@ import ReviewHistoryTable from '../components/ReviewHistoryTable';
 import SearchFilter from '../components/SearchFilter';
 import Pagination from '../components/Pagination';
 import TableSkeleton from '../components/TableSkeleton';
-import { ReviewHistoryItem, ProgrammingLanguage, ReviewStatus } from '../types/review';
+import { ReviewHistoryItem, ProgrammingLanguage } from '../types/review';
 
 export default function HistoryPage() {
   const navigate = useNavigate();
@@ -29,10 +29,6 @@ export default function HistoryPage() {
 
   const handleLanguageChange = (language: ProgrammingLanguage | undefined) => {
     updateFilter({ language });
-  };
-
-  const handleStatusChange = (status: ReviewStatus | undefined) => {
-    updateFilter({ status });
   };
 
   const handleItemClick = (item: ReviewHistoryItem) => {
@@ -84,7 +80,6 @@ export default function HistoryPage() {
             <div className="flex items-center justify-between">
               <SearchFilter
                 onLanguageChange={handleLanguageChange}
-                onStatusChange={handleStatusChange}
               />
               
               {/* 件数表示 */}
@@ -138,14 +133,6 @@ export default function HistoryPage() {
                 )}
               </>
             )}
-          </div>
-
-          {/* 開発中メッセージ */}
-          <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              ℹ️ レビュー履歴画面（仮実装）が動作しています<br />
-              データは仮のデータです。バックエンド実装後に実際のデータを表示します。
-            </p>
           </div>
         </div>
       </main>

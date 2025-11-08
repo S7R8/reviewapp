@@ -28,4 +28,10 @@ type ReviewRepository interface {
 
 	// UpdateFeedback - フィードバックを更新
 	UpdateFeedback(ctx context.Context, reviewID string, score int, comment string) error
+
+	// ListWithFilters - フィルター、ソート、ページネーション付きでレビュー一覧を取得
+	ListWithFilters(ctx context.Context, userID string, filters map[string]interface{}, sortBy, sortOrder string, limit, offset int) ([]*model.Review, error)
+
+	// CountWithFilters - フィルター条件に合致するレビューの総数を取得
+	CountWithFilters(ctx context.Context, userID string, filters map[string]interface{}) (int, error)
 }

@@ -4,6 +4,7 @@ import {
   ReviewHistoryListResponse,
   ReviewHistoryFilter,
 } from '../types/review';
+import { reviewApiClient } from '../api/reviewApi';
 
 export const useReviewHistory = (initialFilter?: ReviewHistoryFilter) => {
   const [items, setItems] = useState<ReviewHistoryItem[]>([]);
@@ -25,100 +26,14 @@ export const useReviewHistory = (initialFilter?: ReviewHistoryFilter) => {
     setError(null);
 
     try {
-      // TODO: 実際のAPIコールに置き換える
-      // const response = await fetch('/api/reviews/history', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(filter),
-      // });
-      // const data: ReviewHistoryListResponse = await response.json();
+      // 実際のAPIを呼び出す
+      const data: ReviewHistoryListResponse = await reviewApiClient.getReviewHistory(filter);
 
-      // モックデータ（ローディング遅延をシミュレート）
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      const mockData: ReviewHistoryListResponse = {
-        items: [
-          {
-            id: '1',
-            createdAt: '2024-01-27T15:30:00Z',
-            language: 'TypeScript',
-            status: 'warning',
-          },
-          {
-            id: '2',
-            createdAt: '2024-01-27T14:20:00Z',
-            language: 'Python',
-            status: 'success',
-          },
-          {
-            id: '3',
-            createdAt: '2024-01-27T11:15:00Z',
-            language: 'JavaScript',
-            status: 'success',
-          },
-          {
-            id: '4',
-            createdAt: '2024-01-26T18:15:00Z',
-            language: 'Go',
-            status: 'error',
-          },
-          {
-            id: '5',
-            createdAt: '2024-01-26T16:45:00Z',
-            language: 'TypeScript',
-            status: 'warning',
-          },
-          {
-            id: '6',
-            createdAt: '2024-01-26T09:45:00Z',
-            language: 'Python',
-            status: 'success',
-          },
-          {
-            id: '7',
-            createdAt: '2024-01-25T17:30:00Z',
-            language: 'Java',
-            status: 'success',
-          },
-          {
-            id: '8',
-            createdAt: '2024-01-25T11:02:00Z',
-            language: 'JavaScript',
-            status: 'error',
-          },
-          {
-            id: '9',
-            createdAt: '2024-01-24T14:20:00Z',
-            language: 'TypeScript',
-            status: 'success',
-          },
-          {
-            id: '10',
-            createdAt: '2024-01-24T10:10:00Z',
-            language: 'Python',
-            status: 'warning',
-          },
-        ],
-        total: 53,
-        page: filter.page || 1,
-        pageSize: filter.pageSize || 10,
-        totalPages: Math.ceil(53 / (filter.pageSize || 10)),
-      };
-
-      let filteredItems = mockData.items;
-
-      if (filter.language) {
-        filteredItems = filteredItems.filter((item) => item.language === filter.language);
-      }
-
-      if (filter.status) {
-        filteredItems = filteredItems.filter((item) => item.status === filter.status);
-      }
-
-      setItems(filteredItems);
-      setTotalItems(mockData.total);
-      setTotalPages(mockData.totalPages);
+      setItems(data.items);
+      setTotalItems(data.total);
+      setTotalPages(data.totalPages);
     } catch (err) {
+      console.error('Failed to fetch review history:', err);
       setError(err instanceof Error ? err : new Error('データの取得に失敗しました'));
     } finally {
       setLoading(false);

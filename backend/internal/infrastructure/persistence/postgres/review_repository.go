@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/s7r8/reviewapp/internal/domain/model"
 )
@@ -262,6 +264,188 @@ func (r *ReviewRepository) FindByUserID(ctx context.Context, userID string, limi
 	}
 
 	return reviews, nil
+}
+
+// ListWithFilters - フィルター、ソート、ページネーション付きでレビュー一覧を取得
+func (r *ReviewRepository) ListWithFilters(ctx context.Context, userID string, filters map[string]interface{}, sortBy, sortOrder string, limit, offset int) ([]*model.Review, error) {
+	// WHERE句を動的に構築
+	where := "user_id = $1 AND deleted_at IS NULL"
+	params := []interface{}{userID}
+	paramIndex := 2
+
+	// 言語フィルター
+	if language, ok := filters["language"].(string); ok && language != "" {
+		where += fmt.Sprintf(" AND language = $%d", paramIndex)
+		params = append(params, language)
+		paramIndex++
+	}
+
+	// ステータスフィルター
+	if status, ok := filters["status"].(string); ok && status != "" {
+		where += fmt.Sprintf(" AND status = $%d", paramIndex)
+		params = append(params, status)
+		paramIndex++
+	}
+
+	// 期間フィルター（開始日）
+	if dateFrom, ok := filters["date_from"].(time.Time); ok && !dateFrom.IsZero() {
+		where += fmt.Sprintf(" AND created_at >= $%d", paramIndex)
+		params = append(params, dateFrom)
+		paramIndex++
+	}
+
+	// 期間フィルター（終了日）
+	if dateTo, ok := filters["date_to"].(time.Time); ok && !dateTo.IsZero() {
+		where += fmt.Sprintf(" AND created_at <= $%d", paramIndex)
+		params = append(params, dateTo)
+		paramIndex++
+	}
+
+	// ORDER BY句
+	orderBy := fmt.Sprintf("%s %s", sortBy, strings.ToUpper(sortOrder))
+
+	// クエリ構築
+	query := fmt.Sprintf(`
+		SELECT 
+			id, user_id, code, language, context,
+			review_result, llm_provider, llm_model, tokens_used,
+			feedback_score, feedback_comment, created_at, updated_at
+		FROM reviews
+		WHERE %s
+		ORDER BY %s
+		LIMIT $%d OFFSET $%d
+	`, where, orderBy, paramIndex, paramIndex+1)
+
+	params = append(params, limit, offset)
+
+	rows, err := r.db.QueryContext(ctx, query, params...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list reviews: %w", err)
+	}
+	defer rows.Close()
+
+	var reviews []*model.Review
+	for rows.Next() {
+		review := &model.Review{}
+		var context, llmProvider, llmModel, feedbackComment sql.NullString
+		var feedbackScore sql.NullInt32
+
+		err := rows.Scan(
+			&review.ID,
+			&review.UserID,
+			&review.Code,
+			&review.Language,
+			&context,
+			&review.ReviewResult,
+			&llmProvider,
+			&llmModel,
+			&review.TokensUsed,
+			&feedbackScore,
+			&feedbackComment,
+			&review.CreatedAt,
+			&review.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan review: %w", err)
+		}
+
+		// Nullable フィールドの処理
+		if context.Valid {
+			review.Context = context.String
+		}
+		if llmProvider.Valid {
+			review.LLMProvider = llmProvider.String
+		}
+		if llmModel.Valid {
+			review.LLMModel = llmModel.String
+		}
+		if feedbackScore.Valid {
+			score := int(feedbackScore.Int32)
+			review.FeedbackScore = &score
+		}
+		if feedbackComment.Valid {
+			review.FeedbackComment = feedbackComment.String
+		}
+
+		// 各レビューの参照ナレッジを取得
+		knowledgeQuery := `
+			SELECT knowledge_id
+			FROM review_knowledge
+			WHERE review_id = $1
+			ORDER BY created_at
+		`
+		knowledgeRows, err := r.db.QueryContext(ctx, knowledgeQuery, review.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query review_knowledge: %w", err)
+		}
+
+		var referencedKnowledge []string
+		for knowledgeRows.Next() {
+			var knowledgeID string
+			if err := knowledgeRows.Scan(&knowledgeID); err != nil {
+				knowledgeRows.Close()
+				return nil, fmt.Errorf("failed to scan knowledge_id: %w", err)
+			}
+			referencedKnowledge = append(referencedKnowledge, knowledgeID)
+		}
+		knowledgeRows.Close()
+
+		review.ReferencedKnowledge = referencedKnowledge
+		reviews = append(reviews, review)
+	}
+
+	return reviews, nil
+}
+
+// CountWithFilters - フィルター条件に合致するレビューの総数を取得
+func (r *ReviewRepository) CountWithFilters(ctx context.Context, userID string, filters map[string]interface{}) (int, error) {
+	// WHERE句を動的に構築
+	where := "user_id = $1 AND deleted_at IS NULL"
+	params := []interface{}{userID}
+	paramIndex := 2
+
+	// 言語フィルター
+	if language, ok := filters["language"].(string); ok && language != "" {
+		where += fmt.Sprintf(" AND language = $%d", paramIndex)
+		params = append(params, language)
+		paramIndex++
+	}
+
+	// ステータスフィルター
+	if status, ok := filters["status"].(string); ok && status != "" {
+		where += fmt.Sprintf(" AND status = $%d", paramIndex)
+		params = append(params, status)
+		paramIndex++
+	}
+
+	// 期間フィルター（開始日）
+	if dateFrom, ok := filters["date_from"].(time.Time); ok && !dateFrom.IsZero() {
+		where += fmt.Sprintf(" AND created_at >= $%d", paramIndex)
+		params = append(params, dateFrom)
+		paramIndex++
+	}
+
+	// 期間フィルター（終了日）
+	if dateTo, ok := filters["date_to"].(time.Time); ok && !dateTo.IsZero() {
+		where += fmt.Sprintf(" AND created_at <= $%d", paramIndex)
+		params = append(params, dateTo)
+		paramIndex++
+	}
+
+	// クエリ構築
+	query := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM reviews
+		WHERE %s
+	`, where)
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, params...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count reviews: %w", err)
+	}
+
+	return count, nil
 }
 
 // Update - レビューを更新

@@ -75,8 +75,12 @@ func TestReviewHandler_ReviewCode(t *testing.T) {
 				mockReviewRepo,
 			)
 
+			listReviewsUseCase := review.NewListReviewsUseCase(
+				mockReviewRepo,
+			)
+
 			// ハンドラーを初期化
-			h := handler.NewReviewHandler(reviewUseCase, feedbackUseCase)
+			h := handler.NewReviewHandler(reviewUseCase, feedbackUseCase, listReviewsUseCase)
 
 			// リクエストを準備
 			var reqBody []byte
@@ -233,8 +237,12 @@ func TestReviewHandler_UpdateFeedback(t *testing.T) {
 				mockReviewRepo,
 			)
 
+			listReviewsUseCase := review.NewListReviewsUseCase(
+				mockReviewRepo,
+			)
+
 			// ハンドラーを初期化
-			h := handler.NewReviewHandler(reviewUseCase, feedbackUseCase)
+			h := handler.NewReviewHandler(reviewUseCase, feedbackUseCase, listReviewsUseCase)
 
 			// リクエストを準備
 			var reqBody []byte

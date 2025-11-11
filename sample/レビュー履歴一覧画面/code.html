@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html class="" lang="ja"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Code Review - レビュー履歴</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+      }
+    </style>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {primary: "#F4C753", secondary: "#FFAB00", "background-light": "#f8f7f6", "background-dark": "#221d10", "text-light": "#172B4D", "text-dark": "#FFFFFF", "border-light": "#F4F5F7", "border-dark": "#232f48"}, fontFamily: {display: "Manrope"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}}}};</script>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-light dark:border-border-dark px-6 md:px-10 py-3">
+<div class="flex items-center gap-4">
+<div class="size-6 text-primary">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.8261 30.5736C16.7203 29.8826 20.2244 29.4783 24 29.4783C27.7756 29.4783 31.2797 29.8826 34.1739 30.5736C36.9144 31.2278 39.9967 32.7669 41.3563 33.8352L24.8486 7.36089C24.4571 6.73303 23.5429 6.73303 23.1514 7.36089L6.64374 33.8352C8.00331 32.7669 11.0856 31.2278 13.8261 30.5736Z" fill="currentColor"></path>
+<path clip-rule="evenodd" d="M39.998 35.764C39.9944 35.7463 39.9875 35.7155 39.9748 35.6706C39.9436 35.5601 39.8949 35.4259 39.8346 35.2825C39.8168 35.2403 39.7989 35.1993 39.7813 35.1602C38.5103 34.2887 35.9788 33.0607 33.7095 32.5189C30.9875 31.8691 27.6413 31.4783 24 31.4783C20.3587 31.4783 17.0125 31.8691 14.2905 32.5189C12.0012 33.0654 9.44505 34.3104 8.18538 35.1832C8.17384 35.2075 8.16216 35.233 8.15052 35.2592C8.09919 35.3751 8.05721 35.4886 8.02977 35.589C8.00356 35.6848 8.00039 35.7333 8.00004 35.7388C8.00004 35.739 8 35.7393 8.00004 35.7388C8.00004 35.7641 8.0104 36.0767 8.68485 36.6314C9.34546 37.1746 10.4222 37.7531 11.9291 38.2772C14.9242 39.319 19.1919 40 24 40C28.8081 40 33.0758 39.319 36.0709 38.2772C37.5778 37.7531 38.6545 37.1746 39.3151 36.6314C39.9006 36.1499 39.9857 35.8511 39.998 35.764ZM4.95178 32.7688L21.4543 6.30267C22.6288 4.4191 25.3712 4.41909 26.5457 6.30267L43.0534 32.777C43.0709 32.8052 43.0878 32.8338 43.104 32.8629L41.3563 33.8352C43.104 32.8629 43.1038 32.8626 43.104 32.8629L43.1051 32.865L43.1065 32.8675L43.1101 32.8739L43.1199 32.8918C43.1276 32.906 43.1377 32.9246 43.1497 32.9473C43.1738 32.9925 43.2062 33.0545 43.244 33.1299C43.319 33.2792 43.4196 33.489 43.5217 33.7317C43.6901 34.1321 44 34.9311 44 35.7391C44 37.4427 43.003 38.7775 41.8558 39.7209C40.6947 40.6757 39.1354 41.4464 37.385 42.0552C33.8654 43.2794 29.133 44 24 44C18.867 44 14.1346 43.2794 10.615 42.0552C8.86463 41.4464 7.30529 40.6757 6.14419 39.7209C4.99695 38.7775 3.99999 37.4427 3.99999 35.7391C3.99999 34.8725 4.29264 34.0922 4.49321 33.6393C4.60375 33.3898 4.71348 33.1804 4.79687 33.0311C4.83898 32.9556 4.87547 32.8935 4.9035 32.8471C4.91754 32.8238 4.92954 32.8043 4.93916 32.7889L4.94662 32.777L4.95178 32.7688ZM35.9868 29.004L24 9.77997L12.0131 29.004C12.4661 28.8609 12.9179 28.7342 13.3617 28.6282C16.4281 27.8961 20.0901 27.4783 24 27.4783C27.9099 27.4783 31.5719 27.8961 34.6383 28.6282C35.082 28.7342 35.5339 28.8609 35.9868 29.004Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-text-light dark:text-text-dark text-lg font-bold leading-tight tracking-[-0.015em]">AI Code Review</h2>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center gap-6">
+<a class="text-text-light/80 dark:text-text-dark/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-primary text-sm font-bold leading-normal" href="#">History</a>
+<a class="text-text-light/80 dark:text-text-dark/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal" href="#">Settings</a>
+</div>
+<button class="flex md:hidden max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 w-10 bg-border-light dark:bg-border-dark text-text-light dark:text-text-dark">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="User avatar image" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBN2ZMmRwyOoFFMCw6_OdxySCwqzb-0TUbS3cFbu6436sY2kewD0Y6GJRTcuyzH9TDkyPdvArHUMBwDDaIDwbRCEhXtSIYPbxz6hzzM1W0y4DkJb1Hnco96riT7KF_WIkgwjCwmJ82cfesvtVy7tgAolX81Uy4pSmqeA0_qYq8erbh5tfaMBjUJk3CsWA4NR00-epsoCyL-PpXbT0QlvurBLwtZoDAh0wDCM2Rv0G3O0210avk9kp9EdscfGiRSVVFf8W61vYb9ILA");'></div>
+</div>
+</header>
+<main class="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-7xl mx-auto">
+<div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+<div class="flex min-w-72 flex-col gap-1">
+<h1 class="text-text-light dark:text-text-dark text-3xl font-bold leading-tight tracking-tight">レビュー履歴</h1>
+<p class="text-text-light/70 dark:text-text-dark/70 text-base font-normal leading-normal">過去のAIコードレビュー履歴を確認します。</p>
+</div>
+<button class="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-base">add</span>
+<span>新規レビュー</span>
+</button>
+</div>
+<div class="space-y-4">
+<div class="flex flex-col md:flex-row gap-4">
+<div class="flex-1">
+<label class="flex flex-col min-w-40 h-12 w-full">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+<div class="text-text-light/60 dark:text-text-dark/60 flex border border-r-0 border-border-light dark:border-border-dark bg-border-light/50 dark:bg-border-dark/50 items-center justify-center pl-4 rounded-l-lg">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark focus:border-primary/50 h-full placeholder:text-text-light/60 dark:placeholder:text-text-dark/60 pl-3 text-base font-normal leading-normal" placeholder="ファイル名で検索..."/>
+</div>
+</label>
+</div>
+<div class="flex gap-3 flex-wrap items-center">
+<button class="flex h-12 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-background-light dark:bg-border-dark border border-border-light dark:border-border-dark px-4">
+<p class="text-text-light dark:text-text-dark text-sm font-medium leading-normal">言語</p>
+<span class="material-symbols-outlined text-text-light/70 dark:text-text-dark/70" style="font-size: 20px;">expand_more</span>
+</button>
+<button class="flex h-12 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-background-light dark:bg-border-dark border border-border-light dark:border-border-dark px-4">
+<p class="text-text-light dark:text-text-dark text-sm font-medium leading-normal">ステータス</p>
+<span class="material-symbols-outlined text-text-light/70 dark:text-text-dark/70" style="font-size: 20px;">expand_more</span>
+</button>
+<button class="flex h-12 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-background-light dark:bg-border-dark border border-border-light dark:border-border-dark px-4">
+<span class="material-symbols-outlined text-text-light/80 dark:text-text-dark/80">calendar_today</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl">
+<table class="w-full text-left">
+<thead class="border-b border-border-light dark:border-border-dark">
+<tr>
+<th class="px-6 py-4 text-xs font-semibold text-text-light/60 dark:text-text-dark/60 uppercase tracking-wider" scope="col">
+<div class="flex items-center gap-1 cursor-pointer">
+<span>日付</span>
+<span class="material-symbols-outlined" style="font-size: 16px;">arrow_upward</span>
+</div>
+</th>
+<th class="px-6 py-4 text-xs font-semibold text-text-light/60 dark:text-text-dark/60 uppercase tracking-wider" scope="col">
+<div class="flex items-center gap-1 cursor-pointer">
+<span>ファイル名</span>
+</div>
+</th>
+<th class="px-6 py-4 text-xs font-semibold text-text-light/60 dark:text-text-dark/60 uppercase tracking-wider" scope="col">
+<div class="flex items-center gap-1 cursor-pointer">
+<span>言語</span>
+</div>
+</th>
+<th class="px-6 py-4 text-xs font-semibold text-text-light/60 dark:text-text-dark/60 uppercase tracking-wider" scope="col">
+<div class="flex items-center gap-1 cursor-pointer">
+<span>ステータス</span>
+</div>
+</th>
+<th class="relative px-6 py-4" scope="col">
+<span class="sr-only">Actions</span>
+</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-light dark:divide-border-dark">
+<tr class="hover:bg-border-light/50 dark:hover:bg-border-dark/30 cursor-pointer transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">2023/10/27 15:30</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-text-light dark:text-text-dark group-hover:text-primary">components/Button.tsx</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">TypeScript</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                改善点あり
+                                            </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<span class="material-symbols-outlined text-text-light/40 dark:text-text-dark/40 group-hover:text-primary transition-colors">arrow_forward_ios</span>
+</td>
+</tr>
+<tr class="hover:bg-border-light/50 dark:hover:bg-border-dark/30 cursor-pointer transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">2023/10/26 18:15</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-text-light dark:text-text-dark group-hover:text-primary">utils/api.py</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">Python</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                成功
+                                            </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<span class="material-symbols-outlined text-text-light/40 dark:text-text-dark/40 group-hover:text-primary transition-colors">arrow_forward_ios</span>
+</td>
+</tr>
+<tr class="hover:bg-border-light/50 dark:hover:bg-border-dark/30 cursor-pointer transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">2023/10/26 09:45</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-text-light dark:text-text-dark group-hover:text-primary">styles/main.scss</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">SCSS</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                成功
+                                            </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<span class="material-symbols-outlined text-text-light/40 dark:text-text-dark/40 group-hover:text-primary transition-colors">arrow_forward_ios</span>
+</td>
+</tr>
+<tr class="hover:bg-border-light/50 dark:hover:bg-border-dark/30 cursor-pointer transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">2023/10/25 11:02</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-text-light dark:text-text-dark group-hover:text-primary">server/index.js</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">JavaScript</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                エラー
+                                            </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<span class="material-symbols-outlined text-text-light/40 dark:text-text-dark/40 group-hover:text-primary transition-colors">arrow_forward_ios</span>
+</td>
+</tr>
+<tr class="hover:bg-border-light/50 dark:hover:bg-border-dark/30 cursor-pointer transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">2023/10/24 14:20</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-text-light dark:text-text-dark group-hover:text-primary">README.md</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-text-light dark:text-text-dark">Markdown</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                成功
+                                            </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<span class="material-symbols-outlined text-text-light/40 dark:text-text-dark/40 group-hover:text-primary transition-colors">arrow_forward_ios</span>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Empty State Example -->
+<!--
+                            <div class="text-center py-16 px-6">
+                                <span class="material-symbols-outlined text-5xl text-text-light/30 dark:text-text-dark/30">history</span>
+                                <h3 class="mt-2 text-lg font-medium text-text-light dark:text-text-dark">まだレビュー履歴がありません</h3>
+                                <p class="mt-1 text-sm text-text-light/60 dark:text-text-dark/60">最初のレビューを実行してみましょう。</p>
+                                <div class="mt-6">
+                                    <button class="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors mx-auto">
+                                        <span class="material-symbols-outlined text-base">add</span>
+                                        <span>新規レビュー</span>
+                                    </button>
+                                </div>
+                            </div>
+                            -->
+</div>
+<nav aria-label="Pagination" class="flex items-center justify-between border-t border-border-light dark:border-border-dark px-4 py-3 sm:px-6">
+<div class="hidden sm:block">
+<p class="text-sm text-text-light/80 dark:text-text-dark/80">
+<span class="font-medium">53</span>件中
+                                    <span class="font-medium">1</span> - <span class="font-medium">5</span>件を表示
+                                </p>
+</div>
+<div class="flex flex-1 justify-between sm:justify-end gap-2">
+<a class="relative inline-flex items-center rounded-md border border-border-light dark:border-border-dark bg-background-light dark:bg-border-dark px-4 py-2 text-sm font-medium text-text-light dark:text-text-dark hover:bg-border-light dark:hover:bg-border-dark/60" href="#">前へ</a>
+<a class="relative inline-flex items-center rounded-md border border-border-light dark:border-border-dark bg-background-light dark:bg-border-dark px-4 py-2 text-sm font-medium text-text-light dark:text-text-dark hover:bg-border-light dark:hover:bg-border-dark/60" href="#">次へ</a>
+</div>
+</nav>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

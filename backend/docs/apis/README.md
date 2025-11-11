@@ -37,7 +37,7 @@
 | API Code | Method | Endpoint | 概要 | Status | ドキュメント |
 |----------|--------|----------|------|--------|-------------|
 | RV-001 | POST | /api/v1/reviews | コードレビュー実行 | ✅ 完了 | [RV-001](./RV-001_review_code.md) |
-| RV-002 | GET | /api/v1/reviews | レビュー履歴一覧 | ⏳ Phase 1 | - |
+| RV-002 | GET | /api/v1/reviews | レビュー履歴一覧 | 📝 仕様作成完了 | [RV-002](./RV-002_list_reviews.md) |
 | RV-003 | GET | /api/v1/reviews/:id | レビュー詳細取得 | ⏳ Phase 1 | - |
 | RV-004 | PUT | /api/v1/reviews/:id/feedback | レビューフィードバック | ✅ 完了 | [RV-004](./RV-004_update_feedback.md) |
 

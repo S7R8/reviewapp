@@ -175,6 +175,44 @@ func (m *MockReviewRepository) UpdateFeedback(ctx context.Context, reviewID stri
 	return nil
 }
 
+// ListWithFilters - フィルター、ソート、ページネーション付きでレビュー一覧を取得（モック）
+func (m *MockReviewRepository) ListWithFilters(ctx context.Context, userID string, filters map[string]interface{}, sortBy, sortOrder string, limit, offset int) ([]*model.Review, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	// 簡易実装：フィルターなしで全件返す
+	var result []*model.Review
+	for _, r := range m.reviews {
+		if r.UserID == userID {
+			result = append(result, r)
+		}
+	}
+	// offset と limit を適用
+	if offset >= len(result) {
+		return []*model.Review{}, nil
+	}
+	end := offset + limit
+	if end > len(result) {
+		end = len(result)
+	}
+	return result[offset:end], nil
+}
+
+// CountWithFilters - フィルター条件に合致するレビューの総数を取得（モック）
+func (m *MockReviewRepository) CountWithFilters(ctx context.Context, userID string, filters map[string]interface{}) (int, error) {
+	if m.err != nil {
+		return 0, m.err
+	}
+	// 簡易実装：フィルターなしで全件カウント
+	count := 0
+	for _, r := range m.reviews {
+		if r.UserID == userID {
+			count++
+		}
+	}
+	return count, nil
+}
+
 // MockUserRepository - ユーザーリポジトリのモック
 type MockUserRepository struct {
 	users map[string]*model.User // key: auth0_user_id

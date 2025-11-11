@@ -14,16 +14,19 @@ import (
 type ReviewHandler struct {
 	reviewCodeUsecase     *review.ReviewCodeUseCase
 	updateFeedbackUsecase *review.UpdateFeedbackUseCase
+	listReviewsUsecase    *review.ListReviewsUseCase
 }
 
 // NewReviewHandler - コンストラクタ
 func NewReviewHandler(
 	reviewCodeUsecase *review.ReviewCodeUseCase,
 	updateFeedbackUsecase *review.UpdateFeedbackUseCase,
+	listReviewsUsecase *review.ListReviewsUseCase,
 ) *ReviewHandler {
 	return &ReviewHandler{
 		reviewCodeUsecase:     reviewCodeUsecase,
 		updateFeedbackUsecase: updateFeedbackUsecase,
+		listReviewsUsecase:    listReviewsUsecase,
 	}
 }
 
@@ -269,4 +272,128 @@ type UpdateFeedbackResponse struct {
 	FeedbackScore   int    `json:"feedback_score"`
 	FeedbackComment string `json:"feedback_comment,omitempty"`
 	UpdatedAt       string `json:"updated_at"`
+}
+
+// ListReviews - GET /api/v1/reviews
+func (h *ReviewHandler) ListReviews(c echo.Context) error {
+	// 1. ユーザーIDを取得
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, response.ErrorResponse{
+			Error:   "unauthorized",
+			Message: "ユーザー情報が見つかりません。/auth/syncを先に呼び出してください。",
+		})
+	}
+
+	// 2. クエリパラメータをパース
+	var query ListReviewsQuery
+	if err := c.Bind(&query); err != nil {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "validation_error",
+			Message: "無効なパラメータです",
+		})
+	}
+
+	// 3. バリデーション
+	if err := validateListReviewsQuery(&query); err != nil {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "validation_error",
+			Message: err.Error(),
+		})
+	}
+
+	// 4. UseCase実行
+	input := review.ListReviewsInput{
+		UserID:    userID,
+		Page:      query.Page,
+		PageSize:  query.PageSize,
+		Language:  query.Language,
+		Status:    query.Status,
+		SortBy:    query.SortBy,
+		SortOrder: query.SortOrder,
+		DateFrom:  query.DateFrom,
+		DateTo:    query.DateTo,
+	}
+
+	output, err := h.listReviewsUsecase.Execute(c.Request().Context(), input)
+	if err != nil {
+		c.Logger().Errorf("ListReviews failed: %v", err)
+		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+			Error:   "internal_error",
+			Message: "サーバーエラーが発生しました",
+		})
+	}
+
+	// 5. レスポンスを構築
+	items := make([]ReviewListItem, len(output.Items))
+	for i, rev := range output.Items {
+		items[i] = ReviewListItem{
+			ID:                  rev.ID,
+			UserID:              rev.UserID,
+			Code:                rev.Code,
+			Language:            rev.Language,
+			Status:              "success", // TODO: statusフィールドが実装されたら修正
+			ReviewResult:        rev.ReviewResult,
+			KnowledgeReferences: rev.ReferencedKnowledge,
+			CreatedAt:           rev.CreatedAt,
+			UpdatedAt:           rev.UpdatedAt,
+		}
+	}
+
+	responseData := ListReviewsResponse{
+		Items:      items,
+		Total:      output.Total,
+		Page:       output.Page,
+		PageSize:   output.PageSize,
+		TotalPages: output.TotalPages,
+	}
+
+	// 6. ヘッダーにAPI Codeを追加
+	c.Response().Header().Set("X-API-Code", "RV-002")
+	return c.JSON(http.StatusOK, responseData)
+}
+
+// validateListReviewsQuery - クエリパラメータのバリデーション
+func validateListReviewsQuery(query *ListReviewsQuery) error {
+	if query.Page < 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "pageは1以上の整数を指定してください")
+	}
+	if query.PageSize < 0 || query.PageSize > 100 {
+		return echo.NewHTTPError(http.StatusBadRequest, "page_sizeは1〜100の整数を指定してください")
+	}
+	return nil
+}
+
+// ListReviewsQuery - クエリパラメータ
+type ListReviewsQuery struct {
+	Page      int        `query:"page"`
+	PageSize  int        `query:"page_size"`
+	Language  string     `query:"language"`
+	Status    string     `query:"status"`
+	SortBy    string     `query:"sort_by"`
+	SortOrder string     `query:"sort_order"`
+	DateFrom  *time.Time `query:"date_from"`
+	DateTo    *time.Time `query:"date_to"`
+}
+
+// ListReviewsResponse - レスポンス
+type ListReviewsResponse struct {
+	Items      []ReviewListItem `json:"items"`
+	Total      int              `json:"total"`
+	Page       int              `json:"page"`
+	PageSize   int              `json:"page_size"`
+	TotalPages int              `json:"total_pages"`
+}
+
+// ReviewListItem - レビュー一覧の項目
+type ReviewListItem struct {
+	ID                  string    `json:"id"`
+	UserID              string    `json:"user_id"`
+	Code                string    `json:"code"`
+	Language            string    `json:"language"`
+	Status              string    `json:"status"`
+	ReviewResult        string    `json:"review_result"`
+	KnowledgeReferences []string  `json:"knowledge_references"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
 }

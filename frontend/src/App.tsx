@@ -6,6 +6,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import CodeReview from './pages/CodeReview';
 import HistoryPage from './pages/HistoryPage';
+import KnowledgePage from './pages/KnowledgePage';
 
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
@@ -23,6 +24,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/review" element={<CodeReview />} />
         <Route path="/review/:id" element={<CodeReview />} />
+        <Route path="/knowledge" element={<KnowledgePage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>

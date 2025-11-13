@@ -15,7 +15,12 @@ export interface KnowledgeCreateRequest {
   title: string;
   content: string;
   category: KnowledgeCategory;
-  priority: number; // 1-5
+  priority: number; // 1-3
+}
+
+// ナレッジ一覧フィルタ
+export interface KnowledgeListFilter {
+  category?: KnowledgeCategory;
 }
 
 // ナレッジエンティティ

@@ -4,17 +4,20 @@ import Editor from '@monaco-editor/react';
 import Sidebar, { SidebarToggle } from '../components/Sidebar';
 import { ReviewResultSkeleton } from '../components/Skeleton';
 import { FeedbackButtons } from '../components/FeedbackButtons';
+import { Toast } from '../components/Toast';
 import { useSidebar } from '../hooks/useSidebar';
 import { useReviewStore } from '../store/reviewStore';
 import { detectLanguage } from '../utils/languageDetector';
-import { knowledgeApiClient, KnowledgeCreateRequest, getCategoryLabel } from '../api/knowledgeApi';
+import { createKnowledgeFromReview } from '../utils/knowledgeHelper';
+import { knowledgeApiClient, getCategoryLabel } from '../api/knowledgeApi';
 import {
   Bookmark,
   ChevronRight,
   AlertTriangle,
   CheckCircle2,
   X,
-  AlertCircle
+  AlertCircle,
+  Loader
 } from 'lucide-react';
 
 const LANGUAGE_OPTIONS = [
@@ -27,6 +30,8 @@ const LANGUAGE_OPTIONS = [
   { value: 'css', label: 'CSS' },
 ];
 
+type ToastType = 'success' | 'error';
+
 export default function CodeReview() {
   const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
   
@@ -36,18 +41,20 @@ export default function CodeReview() {
     isLoading, 
     error, 
     executeReview,
-    currentCode,        // ★ グローバル状態から取得
-    currentLanguage,    // ★ グローバル状態から取得
-    setCode,            // ★ 保存メソッド
-    reset               // ★ リセットメソッド
+    currentCode,
+    currentLanguage,
+    setCode,
+    reset
   } = useReviewStore();
   
-  const [code, setCodeLocal] = useState(currentCode);           // ★ グローバルから初期化
-  const [language, setLanguageLocal] = useState(currentLanguage); // ★ グローバルから初期化
+  const [code, setCodeLocal] = useState(currentCode);
+  const [language, setLanguageLocal] = useState(currentLanguage);
   const [showKnowledge, setShowKnowledge] = useState(false);
-  const [showSaveModal, setShowSaveModal] = useState(false); // ★ ナレッジ保存モーダル
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // トースト通知
+  const [toast, setToast] = useState<{ type: ToastType; message: string } | null>(null);
 
-  // ★ マウント時にグローバル状態を復元
   useEffect(() => {
     if (currentCode) {
       setCodeLocal(currentCode);
@@ -55,31 +62,27 @@ export default function CodeReview() {
     }
   }, []);
 
-  // コード変更時の処理（自動言語判定 + グローバル保存）
   const handleCodeChange = (value: string | undefined) => {
     const newCode = value || '';
     setCodeLocal(newCode);
     
-    // コードが一定量入力されたら自動で言語を判定
     if (newCode.trim().length > 10) {
       const detected = detectLanguage(newCode);
       if (detected !== language) {
         setLanguageLocal(detected);
-        setCode(newCode, detected); // ★ グローバルに保存
+        setCode(newCode, detected);
         return;
       }
     }
     
-    setCode(newCode, language); // ★ グローバルに保存
+    setCode(newCode, language);
   };
 
-  // 言語を手動で変更（自動判定を一時的に上書き）
   const handleLanguageChange = (newLanguage: string) => {
     setLanguageLocal(newLanguage);
-    setCode(code, newLanguage); // ★ グローバルに保存
+    setCode(code, newLanguage);
   };
 
-  // ★ 新規レビュー（完全リセット）
   const handleNewReview = () => {
     if (code.trim() || currentReview) {
       const confirmed = window.confirm(
@@ -88,7 +91,7 @@ export default function CodeReview() {
       if (!confirmed) return;
     }
     
-    reset(); // ★ グローバル状態をリセット
+    reset();
     setCodeLocal('');
     setLanguageLocal('python');
   };
@@ -97,18 +100,38 @@ export default function CodeReview() {
     await executeReview(code, language, `code.${getFileExtension(language)}`);
   };
 
-  // ★ ナレッジとして保存
-  const handleSaveAsKnowledge = async (knowledge: KnowledgeCreateRequest) => {
+  // ★ ナレッジとして保存（シンプル版）
+  const handleSaveAsKnowledge = async () => {
+    if (!currentReview) return;
+    
+    setIsSaving(true);
+    
     try {
-      await knowledgeApiClient.createKnowledge(knowledge);
-      alert('✅ ナレッジを保存しました！');
+      // レビュー結果からナレッジを生成
+      const knowledgeData = createKnowledgeFromReview(currentReview, language);
+      
+      // API呼び出し
+      await knowledgeApiClient.createKnowledge(knowledgeData);
+      
+      // 成功通知
+      setToast({
+        type: 'success',
+        message: 'ナレッジを保存しました！'
+      });
+      
     } catch (error) {
       console.error('ナレッジ保存エラー:', error);
-      throw error; // モーダル側でエラー表示
+      
+      // エラー通知
+      setToast({
+        type: 'error',
+        message: 'ナレッジの保存に失敗しました'
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // ファイル拡張子の取得
   const getFileExtension = (lang: string): string => {
     const extensions: Record<string, string> = {
       python: 'py',
@@ -122,7 +145,6 @@ export default function CodeReview() {
     return extensions[lang] || 'txt';
   };
 
-  // パース失敗判定
   const isParseFailure = currentReview && 
     currentReview.goodPoints.length === 0 && 
     currentReview.improvements.length === 0;
@@ -166,7 +188,6 @@ export default function CodeReview() {
                     </select>
                   </label>
                   
-                  {/* ★ 新規レビューボタン */}
                   <button
                     onClick={handleNewReview}
                     className="px-4 h-12 border border-gray-300 text-[#111827] rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors mt-6 flex-shrink-0"
@@ -229,7 +250,6 @@ export default function CodeReview() {
                     <ReviewResultSkeleton />
                   ) : currentReview ? (
                     isParseFailure ? (
-                      /* パース失敗時：生のマークダウンを表示 */
                       <div className="p-6">
                         <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                           <p className="text-sm text-yellow-800 flex items-center gap-2">
@@ -263,7 +283,6 @@ export default function CodeReview() {
                         </div>
                       </div>
                     ) : (
-                      /* 通常表示 */
                       <div className="space-y-6 p-6">
                         <p className="text-[#111827]">{currentReview.summary}</p>
 
@@ -363,11 +382,21 @@ export default function CodeReview() {
                     <FeedbackButtons />
                     
                     <button 
-                      onClick={() => setShowSaveModal(true)}
-                      className="flex items-center gap-2 px-4 h-10 bg-[#F4C753]/20 text-[#111827] rounded-lg text-sm font-bold hover:bg-[#F4C753]/30 transition-colors"
+                      onClick={handleSaveAsKnowledge}
+                      disabled={isSaving}
+                      className="flex items-center gap-2 px-4 h-10 bg-[#F4C753]/20 text-[#111827] rounded-lg text-sm font-bold hover:bg-[#F4C753]/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Bookmark size={16} />
-                      ナレッジとして保存
+                      {isSaving ? (
+                        <>
+                          <Loader size={16} className="animate-spin" />
+                          保存中...
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark size={16} />
+                          ナレッジとして保存
+                        </>
+                      )}
                     </button>
                   </div>
                 )}
@@ -376,6 +405,7 @@ export default function CodeReview() {
           </div>
         </div>
 
+        {/* 関連ナレッジサイドパネル */}
         {showKnowledge && relatedKnowledge.length > 0 && (
           <>
             <div
@@ -401,12 +431,10 @@ export default function CodeReview() {
                       key={knowledge.id}
                       className="p-4 rounded-xl bg-gray-50 border border-gray-200 hover:border-[#F4C753]/50 hover:shadow-md transition-all"
                     >
-                      {/* タイトル */}
                       <h4 className="font-bold text-sm text-[#111827] mb-2">
                         {knowledge.title}
                       </h4>
                       
-                      {/* カテゴリとタグ */}
                       <div className="flex gap-2 mb-3">
                         <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-700">
                           {getCategoryLabel(knowledge.category as any)}
@@ -423,7 +451,6 @@ export default function CodeReview() {
                         ))}
                       </div>
                       
-                      {/* 内容 */}
                       <p className="text-xs text-[#6B7280]">
                         {knowledge.description}
                       </p>
@@ -433,6 +460,15 @@ export default function CodeReview() {
               </div>
             </div>
           </>
+        )}
+
+        {/* トースト通知 */}
+        {toast && (
+          <Toast
+            type={toast.type}
+            message={toast.message}
+            onClose={() => setToast(null)}
+          />
         )}
       </main>
     </div>

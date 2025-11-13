@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { ReviewResult, Knowledge } from '../types/review';
 import { reviewApiClient } from '../api/reviewApi';
+import { knowledgeApiClient, Knowledge as ApiKnowledge } from '../api/knowledgeApi';
 
 interface ReviewState {
   currentReview: ReviewResult | null;
@@ -10,11 +11,18 @@ interface ReviewState {
   feedbackScore: number | null;
   isSubmittingFeedback: boolean;
   
+  // ★ コードと言語の状態を追加
+  currentCode: string;
+  currentLanguage: string;
+  
   // レビュー実行（実際のAPI呼び出し）
   executeReview: (code: string, language: string, filename: string) => Promise<void>;
   
   // フィードバック送信
   submitFeedback: (score: number, comment?: string) => Promise<void>;
+  
+  // ★ コードと言語を保存
+  setCode: (code: string, language: string) => void;
   
   // リセット
   reset: () => void;
@@ -54,9 +62,21 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   error: null,
   feedbackScore: null,
   isSubmittingFeedback: false,
+  currentCode: '',           // ★ 初期値
+  currentLanguage: 'python', // ★ 初期値
+
+  // ★ コードと言語を保存するメソッド
+  setCode: (code: string, language: string) => {
+    set({ currentCode: code, currentLanguage: language });
+  },
 
   executeReview: async (code: string, language: string, filename: string) => {
-    set({ isLoading: true, error: null });
+    set({ 
+      isLoading: true, 
+      error: null,
+      currentCode: code,      // ★ レビュー実行時に保存
+      currentLanguage: language
+    });
 
     try {
       // 実際のAPI呼び出し
@@ -66,12 +86,36 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
         filename,
       });
 
-      // TODO: 将来的には関連ナレッジもAPIから取得
-      const mockKnowledge = generateMockKnowledge();
+      // ★ 関連ナレッジを取得（referenced_knowledgeがあれば）
+      let knowledgeList: Knowledge[] = [];
+      if (review.referencedKnowledgeIds && review.referencedKnowledgeIds.length > 0) {
+        try {
+          // 複数のIDからナレッジを取得
+          const knowledgeDetails = await Promise.all(
+            review.referencedKnowledgeIds.map(id => knowledgeApiClient.getKnowledgeById(id))
+          );
+          
+          // APIのKnowledge型をフロントの型に変換
+          knowledgeList = knowledgeDetails.map((k: ApiKnowledge) => ({
+            id: k.id,
+            title: k.title,
+            description: k.content,
+            category: k.category,
+            tags: [k.category], // カテゴリをタグとして使用
+          }));
+        } catch (error) {
+          console.error('ナレッジ取得エラー:', error);
+          // エラー時はモックデータを使用
+          knowledgeList = generateMockKnowledge();
+        }
+      } else {
+        // referenced_knowledgeがない場合はモック
+        knowledgeList = generateMockKnowledge();
+      }
 
       set({
         currentReview: review,
-        relatedKnowledge: mockKnowledge,
+        relatedKnowledge: knowledgeList,
         isLoading: false,
         feedbackScore: null, // リセット
       });
@@ -115,6 +159,8 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
       error: null,
       feedbackScore: null,
       isSubmittingFeedback: false,
+      currentCode: '',           // ★ リセット
+      currentLanguage: 'python', // ★ リセット
     });
   },
 }));

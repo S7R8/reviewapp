@@ -18,6 +18,12 @@ interface ApiReviewResponse {
       severity: string;
     }>;
   };
+  referenced_knowledge?: Array<{  // ★ 追加
+    id: string;
+    title: string;
+    category: string;
+    priority: number;
+  }>;
   feedback_score: number | null;
   feedback_comment: string | null;
   created_at: string;
@@ -69,6 +75,7 @@ class ReviewApiClient {
         severity: imp.severity || 'medium',
       })),
       references: [],
+      referencedKnowledgeIds: (data.referenced_knowledge || []).map(k => k.id), // ★ 追加
       createdAt: data.created_at,
       rawMarkdown: data.review_result,
     };

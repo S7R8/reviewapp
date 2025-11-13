@@ -28,33 +28,6 @@ interface ReviewState {
   reset: () => void;
 }
 
-// 仮の関連ナレッジを生成（将来的にはAPIから取得）
-const generateMockKnowledge = (): Knowledge[] => {
-  return [
-    {
-      id: '1',
-      title: 'エラーハンドリングのベストプラクティス',
-      description: 'try-catchを使用した適切なエラー処理の方法。ユーザー向けメッセージと開発者向け詳細を分ける。',
-      category: 'Error Handling',
-      tags: ['JavaScript', 'Best Practice'],
-    },
-    {
-      id: '2',
-      title: '効果的なコメントの書き方',
-      description: 'コードの「なぜ」を説明するコメントを書く。「何を」しているかは書かない。',
-      category: 'Documentation',
-      tags: ['Documentation', 'Clean Code'],
-    },
-    {
-      id: '3',
-      title: 'JavaScriptのNullチェック',
-      description: 'Optional Chaining (?.) を用いた安全なプロパティアクセスの実践方法。',
-      category: 'JavaScript',
-      tags: ['JavaScript', 'Safety'],
-    },
-  ];
-};
-
 export const useReviewStore = create<ReviewState>((set, get) => ({
   currentReview: null,
   relatedKnowledge: [],
@@ -105,13 +78,11 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
           }));
         } catch (error) {
           console.error('ナレッジ取得エラー:', error);
-          // エラー時はモックデータを使用
-          knowledgeList = generateMockKnowledge();
+          // エラー時は空配列
+          knowledgeList = [];
         }
-      } else {
-        // referenced_knowledgeがない場合はモック
-        knowledgeList = generateMockKnowledge();
       }
+      // referenced_knowledgeがない場合は空配列（モックは使わない）
 
       set({
         currentReview: review,

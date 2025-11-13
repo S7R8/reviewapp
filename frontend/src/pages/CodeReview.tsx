@@ -235,7 +235,7 @@ export default function CodeReview() {
               <div className="lg:col-span-6 flex flex-col bg-white rounded-xl border border-gray-200 h-auto lg:h-full min-h-[600px] overflow-hidden">
                 <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                   <h2 className="text-lg font-bold text-[#111827]">レビュー結果</h2>
-                  {currentReview && (
+                  {currentReview && relatedKnowledge.length > 0 && (
                     <button
                       onClick={() => setShowKnowledge(!showKnowledge)}
                       className="flex items-center gap-2 px-4 h-9 bg-[#F4C753]/20 text-[#111827] rounded-lg text-sm font-medium hover:bg-[#F4C753]/30 transition-colors"

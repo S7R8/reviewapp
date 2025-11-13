@@ -18,12 +18,7 @@ interface ApiReviewResponse {
       severity: string;
     }>;
   };
-  referenced_knowledge?: Array<{  // ★ 追加
-    id: string;
-    title: string;
-    category: string;
-    priority: number;
-  }>;
+  used_knowledge_ids: string[];  // ★ フィールド名を修正
   feedback_score: number | null;
   feedback_comment: string | null;
   created_at: string;
@@ -75,7 +70,7 @@ class ReviewApiClient {
         severity: imp.severity || 'medium',
       })),
       references: [],
-      referencedKnowledgeIds: (data.referenced_knowledge || []).map(k => k.id), // ★ 追加
+      referencedKnowledgeIds: data.used_knowledge_ids || [], // ★ 修正
       createdAt: data.created_at,
       rawMarkdown: data.review_result,
     };

@@ -1,4 +1,15 @@
 /**
+ * ナレッジの型定義（仮）
+ */
+export interface Knowledge {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  tags: string[];
+}
+
+/**
  * レビューステータスの型定義
  */
 export type ReviewStatus = 'success' | 'warning' | 'error' | 'pending';
@@ -6,7 +17,7 @@ export type ReviewStatus = 'success' | 'warning' | 'error' | 'pending';
 /**
  * プログラミング言語の型定義
  */
-export type ProgrammingLanguage = 
+export type ProgrammingLanguage =
   | 'TypeScript'
   | 'JavaScript'
   | 'Python'
@@ -69,4 +80,35 @@ export interface StatusBadgeConfig {
   label: string;
   bgColor: string;
   textColor: string;
+}
+
+/**
+ * レビューリクエストの型定義
+ */
+export interface ReviewRequest {
+  code: string;
+  language: string;
+  filename?: string;
+}
+
+/**
+ * レビュー結果の型定義
+ */
+export interface ReviewResult {
+  id: string;
+  summary: string;
+  goodPoints: string[];
+  improvements: Array<{
+    title: string;
+    description: string;
+    codeAfter?: string;
+    severity: 'low' | 'medium' | 'high';
+  }>;
+  references: Array<{
+    source: string;
+    description: string;
+  }>;
+  referencedKnowledgeIds?: string[]; // ★ 追加
+  createdAt: string;
+  rawMarkdown: string;
 }

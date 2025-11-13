@@ -1,18 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import Editor from '@monaco-editor/react';
 import Sidebar, { SidebarToggle } from '../components/Sidebar';
 import { ReviewResultSkeleton } from '../components/Skeleton';
 import { FeedbackButtons } from '../components/FeedbackButtons';
+import { Toast } from '../components/Toast';
 import { useSidebar } from '../hooks/useSidebar';
 import { useReviewStore } from '../store/reviewStore';
+import { detectLanguage } from '../utils/languageDetector';
+import { createKnowledgeFromReview } from '../utils/knowledgeHelper';
+import { knowledgeApiClient, getCategoryLabel } from '../api/knowledgeApi';
 import {
   Bookmark,
   ChevronRight,
   AlertTriangle,
   CheckCircle2,
   X,
-  AlertCircle
+  AlertCircle,
+  Loader
 } from 'lucide-react';
 
 const LANGUAGE_OPTIONS = [
@@ -25,41 +30,121 @@ const LANGUAGE_OPTIONS = [
   { value: 'css', label: 'CSS' },
 ];
 
-const DEFAULT_CODE = `def binary_search(arr, target):
-    low = 0
-    high = len(arr) - 1
-    
-    while low <= high:
-        # This is a potential bug, can cause overflow
-        mid = (low + high) // 2
-        guess = arr[mid]
-        
-        if guess == target:
-            return mid
-        if guess > target:
-            high = mid - 1
-        else:
-            low = mid + 1
-    return None
-
-# Test the function
-my_list = [1, 3, 5, 7, 9]
-print(binary_search(my_list, 3))  # Expected: 1
-print(binary_search(my_list, -1)) # Expected: None`;
+type ToastType = 'success' | 'error';
 
 export default function CodeReview() {
-  const [language, setLanguage] = useState('python');
-  const [code, setCode] = useState(DEFAULT_CODE);
-  const [showKnowledge, setShowKnowledge] = useState(false);
   const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
+  
+  const { 
+    currentReview, 
+    relatedKnowledge, 
+    isLoading, 
+    error, 
+    executeReview,
+    currentCode,
+    currentLanguage,
+    setCode,
+    reset
+  } = useReviewStore();
+  
+  const [code, setCodeLocal] = useState(currentCode);
+  const [language, setLanguageLocal] = useState(currentLanguage);
+  const [showKnowledge, setShowKnowledge] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // トースト通知
+  const [toast, setToast] = useState<{ type: ToastType; message: string } | null>(null);
 
-  const { currentReview, relatedKnowledge, isLoading, error, executeReview } = useReviewStore();
+  useEffect(() => {
+    if (currentCode) {
+      setCodeLocal(currentCode);
+      setLanguageLocal(currentLanguage);
+    }
+  }, []);
 
-  const handleReview = async () => {
-    await executeReview(code, language, 'code.py');
+  const handleCodeChange = (value: string | undefined) => {
+    const newCode = value || '';
+    setCodeLocal(newCode);
+    
+    if (newCode.trim().length > 10) {
+      const detected = detectLanguage(newCode);
+      if (detected !== language) {
+        setLanguageLocal(detected);
+        setCode(newCode, detected);
+        return;
+      }
+    }
+    
+    setCode(newCode, language);
   };
 
-  // パース失敗判定
+  const handleLanguageChange = (newLanguage: string) => {
+    setLanguageLocal(newLanguage);
+    setCode(code, newLanguage);
+  };
+
+  const handleNewReview = () => {
+    if (code.trim() || currentReview) {
+      const confirmed = window.confirm(
+        '現在の作業をクリアして新規レビューを開始しますか？'
+      );
+      if (!confirmed) return;
+    }
+    
+    reset();
+    setCodeLocal('');
+    setLanguageLocal('python');
+  };
+
+  const handleReview = async () => {
+    await executeReview(code, language, `code.${getFileExtension(language)}`);
+  };
+
+  // ★ ナレッジとして保存（シンプル版）
+  const handleSaveAsKnowledge = async () => {
+    if (!currentReview) return;
+    
+    setIsSaving(true);
+    
+    try {
+      // レビュー結果からナレッジを生成
+      const knowledgeData = createKnowledgeFromReview(currentReview, language);
+      
+      // API呼び出し
+      await knowledgeApiClient.createKnowledge(knowledgeData);
+      
+      // 成功通知
+      setToast({
+        type: 'success',
+        message: 'ナレッジを保存しました！'
+      });
+      
+    } catch (error) {
+      console.error('ナレッジ保存エラー:', error);
+      
+      // エラー通知
+      setToast({
+        type: 'error',
+        message: 'ナレッジの保存に失敗しました'
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getFileExtension = (lang: string): string => {
+    const extensions: Record<string, string> = {
+      python: 'py',
+      javascript: 'js',
+      typescript: 'ts',
+      go: 'go',
+      java: 'java',
+      html: 'html',
+      css: 'css',
+    };
+    return extensions[lang] || 'txt';
+  };
+
   const isParseFailure = currentReview && 
     currentReview.goodPoints.length === 0 && 
     currentReview.improvements.length === 0;
@@ -73,9 +158,9 @@ export default function CodeReview() {
           <SidebarToggle isOpen={sidebarOpen} onToggle={toggleSidebar} />
         </div>
 
-        <div className="flex-1 flex flex-col p-6 lg:p-8 overflow-y-auto animate-fade-in">
-          <div className="flex flex-col gap-8 h-full">
-            <header className="ml-12">
+        <div className="flex-1 flex flex-col p-6 lg:p-8 overflow-hidden animate-fade-in">
+          <div className="flex flex-col gap-4 h-full">
+            <header className="ml-12 flex-shrink-0">
               <h1 className="text-[#111827] text-4xl font-black mb-2">
                 AIコードレビュー
               </h1>
@@ -84,14 +169,15 @@ export default function CodeReview() {
               </p>
             </header>
 
-            <div className="flex-1 grid grid-cols-10 gap-6 h-full min-h-0">
-              <div className="col-span-10 lg:col-span-4 flex flex-col gap-4 h-full">
-                <div className="flex items-center">
+            <div className="flex-1 flex flex-col lg:grid lg:grid-cols-10 gap-6 min-h-0 overflow-y-auto lg:overflow-y-hidden">
+              {/* コード入力エリア */}
+              <div className="lg:col-span-4 flex flex-col gap-4 h-auto lg:h-full">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <label className="flex flex-col" style={{ width: '200px' }}>
                     <p className="text-[#111827] text-sm font-medium mb-2">言語</p>
                     <select
                       value={language}
-                      onChange={(e) => setLanguage(e.target.value)}
+                      onChange={(e) => handleLanguageChange(e.target.value)}
                       className="w-full h-12 px-4 rounded-lg border border-gray-300 bg-white text-[#111827] focus:border-[#FBBF24] focus:ring-[#FBBF24]"
                     >
                       {LANGUAGE_OPTIONS.map((option) => (
@@ -101,15 +187,23 @@ export default function CodeReview() {
                       ))}
                     </select>
                   </label>
+                  
+                  <button
+                    onClick={handleNewReview}
+                    className="px-4 h-12 border border-gray-300 text-[#111827] rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors mt-6 flex-shrink-0"
+                    title="新規レビューを開始"
+                  >
+                    🆕 新規
+                  </button>
                 </div>
 
-                <div className="flex-1 min-h-[400px] rounded-xl overflow-hidden border border-gray-300">
+                <div className="flex-1 min-h-[500px] lg:min-h-0 rounded-xl overflow-hidden border border-gray-300 flex-shrink-0">
                   <Editor
                     height="100%"
                     defaultLanguage={language}
                     language={language}
                     value={code}
-                    onChange={(value) => setCode(value || '')}
+                    onChange={handleCodeChange}
                     theme="vs-dark"
                     options={{
                       minimap: { enabled: false },
@@ -124,7 +218,7 @@ export default function CodeReview() {
                 <button
                   onClick={handleReview}
                   disabled={isLoading || !code.trim()}
-                  className="w-full h-12 px-4 bg-[#FBBF24] text-[#111827] rounded-lg font-bold text-base hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full h-12 px-4 bg-[#FBBF24] text-[#111827] rounded-lg font-bold text-base hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 flex-shrink-0"
                 >
                   {isLoading ? (
                     <>
@@ -137,7 +231,8 @@ export default function CodeReview() {
                 </button>
               </div>
 
-              <div className="col-span-10 lg:col-span-6 flex flex-col bg-white rounded-xl border border-gray-200 h-full overflow-hidden">
+              {/* レビュー結果エリア */}
+              <div className="lg:col-span-6 flex flex-col bg-white rounded-xl border border-gray-200 h-auto lg:h-full min-h-[600px] overflow-hidden">
                 <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                   <h2 className="text-lg font-bold text-[#111827]">レビュー結果</h2>
                   {currentReview && (
@@ -155,7 +250,6 @@ export default function CodeReview() {
                     <ReviewResultSkeleton />
                   ) : currentReview ? (
                     isParseFailure ? (
-                      /* パース失敗時：生のマークダウンを表示 */
                       <div className="p-6">
                         <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                           <p className="text-sm text-yellow-800 flex items-center gap-2">
@@ -189,7 +283,6 @@ export default function CodeReview() {
                         </div>
                       </div>
                     ) : (
-                      /* 通常表示 */
                       <div className="space-y-6 p-6">
                         <p className="text-[#111827]">{currentReview.summary}</p>
 
@@ -288,9 +381,22 @@ export default function CodeReview() {
                   <div className="p-4 flex items-center justify-between border-t border-gray-200">
                     <FeedbackButtons />
                     
-                    <button className="flex items-center gap-2 px-4 h-10 bg-[#F4C753]/20 text-[#111827] rounded-lg text-sm font-bold hover:bg-[#F4C753]/30 transition-colors">
-                      <Bookmark size={16} />
-                      ナレッジとして保存
+                    <button 
+                      onClick={handleSaveAsKnowledge}
+                      disabled={isSaving}
+                      className="flex items-center gap-2 px-4 h-10 bg-[#F4C753]/20 text-[#111827] rounded-lg text-sm font-bold hover:bg-[#F4C753]/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader size={16} className="animate-spin" />
+                          保存中...
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark size={16} />
+                          ナレッジとして保存
+                        </>
+                      )}
                     </button>
                   </div>
                 )}
@@ -299,6 +405,7 @@ export default function CodeReview() {
           </div>
         </div>
 
+        {/* 関連ナレッジサイドパネル */}
         {showKnowledge && relatedKnowledge.length > 0 && (
           <>
             <div
@@ -308,7 +415,9 @@ export default function CodeReview() {
             <div className="fixed top-0 right-0 h-full w-full lg:w-[500px] bg-white border-l border-gray-200 shadow-2xl z-50 overflow-y-auto animate-slide-in-right">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-[#111827]">関連ナレッジ</h3>
+                  <h3 className="text-xl font-bold text-[#111827]">
+                    📚 このレビューで参照されたナレッジ
+                  </h3>
                   <button
                     onClick={() => setShowKnowledge(false)}
                     className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
@@ -320,30 +429,46 @@ export default function CodeReview() {
                   {relatedKnowledge.map((knowledge) => (
                     <div
                       key={knowledge.id}
-                      className="p-4 rounded-xl bg-gray-50 border border-gray-200 hover:border-[#F4C753]/50 hover:shadow-md transition-all cursor-pointer"
+                      className="p-4 rounded-xl bg-gray-50 border border-gray-200 hover:border-[#F4C753]/50 hover:shadow-md transition-all"
                     >
                       <h4 className="font-bold text-sm text-[#111827] mb-2">
                         {knowledge.title}
                       </h4>
-                      <p className="text-xs text-[#6B7280] mb-3">
-                        {knowledge.description}
-                      </p>
-                      <div className="flex gap-2 flex-wrap">
-                        {knowledge.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-700"
-                          >
-                            {tag}
-                          </span>
+                      
+                      <div className="flex gap-2 mb-3">
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                          {getCategoryLabel(knowledge.category as any)}
+                        </span>
+                        {knowledge.tags.map((tag, i) => (
+                          tag !== knowledge.category && (
+                            <span
+                              key={i}
+                              className="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-700"
+                            >
+                              {tag}
+                            </span>
+                          )
                         ))}
                       </div>
+                      
+                      <p className="text-xs text-[#6B7280]">
+                        {knowledge.description}
+                      </p>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
           </>
+        )}
+
+        {/* トースト通知 */}
+        {toast && (
+          <Toast
+            type={toast.type}
+            message={toast.message}
+            onClose={() => setToast(null)}
+          />
         )}
       </main>
     </div>

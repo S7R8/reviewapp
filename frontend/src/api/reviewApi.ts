@@ -18,12 +18,7 @@ interface ApiReviewResponse {
       severity: string;
     }>;
   };
-  referenced_knowledge?: Array<{  // ★ 追加
-    id: string;
-    title: string;
-    category: string;
-    priority: number;
-  }>;
+  used_knowledge_ids: string[];  // ★ フィールド名を修正
   feedback_score: number | null;
   feedback_comment: string | null;
   created_at: string;
@@ -75,7 +70,7 @@ class ReviewApiClient {
         severity: imp.severity || 'medium',
       })),
       references: [],
-      referencedKnowledgeIds: (data.referenced_knowledge || []).map(k => k.id), // ★ 追加
+      referencedKnowledgeIds: data.used_knowledge_ids || [], // ★ 修正
       createdAt: data.created_at,
       rawMarkdown: data.review_result,
     };
@@ -89,12 +84,44 @@ class ReviewApiClient {
   }
 
   /**
+   * レビュー詳細を取得（ID指定）
+   */
+  async getReviewById(id: string): Promise<ReviewResult> {
+    const data = await apiGet<ApiReviewResponse>(`/api/v1/reviews/${id}`);
+
+    // バックエンドから構造化データを受け取る
+    const structured = data.structured_result || {
+      summary: 'レビュー結果を確認してください',
+      good_points: [],
+      improvements: [],
+    };
+
+    return {
+      id: data.id,
+      code: data.code,
+      summary: structured.summary,
+      goodPoints: structured.good_points || [],
+      improvements: (structured.improvements || []).map((imp: any) => ({
+        title: imp.title,
+        description: imp.description,
+        codeAfter: imp.code_after,
+        severity: imp.severity || 'medium',
+      })),
+      references: [],
+      referencedKnowledgeIds: data.used_knowledge_ids || [],
+      language: data.language,
+      createdAt: data.created_at,
+      rawMarkdown: data.review_result,
+    };
+  }
+
+  /**
    * レビュー履歴一覧を取得
    */
   async getReviewHistory(filter: ReviewHistoryFilter): Promise<ReviewHistoryListResponse> {
     // クエリパラメータを構築
     const params = new URLSearchParams();
-    
+
     if (filter.page) params.append('page', filter.page.toString());
     if (filter.pageSize) params.append('page_size', filter.pageSize.toString());
     if (filter.language) params.append('language', filter.language);
@@ -117,6 +144,7 @@ class ReviewApiClient {
     return {
       items: data.items.map((item) => ({
         id: item.id,
+        code: item.code,
         createdAt: item.created_at,
         language: item.language as any, // ProgrammingLanguageにキャスト
         status: item.status as any, // ReviewStatusにキャスト

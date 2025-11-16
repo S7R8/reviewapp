@@ -16,10 +16,11 @@ func NewReviewService() *ReviewService {
 	return &ReviewService{}
 }
 
-func (s *ReviewService) BuildPromptFromKnowledge(knowledges []*model.Knowledge) string {
+// BuildPromptFromKnowledge - ナレッジからプロンプトを生成し、実際に使用したナレッジを返す
+func (s *ReviewService) BuildPromptFromKnowledge(knowledges []*model.Knowledge) (string, []*model.Knowledge) {
 	// ナレッジが存在しない場合
 	if len(knowledges) == 0 {
-		return "一般的なベストプラクティスに基づいてレビューしてください。"
+		return "一般的なベストプラクティスに基づいてレビューしてください。", []*model.Knowledge{}
 	}
 
 	sortedKnowledges := make([]*model.Knowledge, len(knowledges))
@@ -38,15 +39,19 @@ func (s *ReviewService) BuildPromptFromKnowledge(knowledges []*model.Knowledge) 
 		limit = len(sortedKnowledges)
 	}
 
+	// 実際に使用したナレッジを記録
+	usedKnowledges := make([]*model.Knowledge, limit)
+
 	for i := 0; i < limit; i++ {
 		k := sortedKnowledges[i]
+		usedKnowledges[i] = k
 
 		categoryName := s.getCategoryName(k.Category)
 		sb.WriteString(fmt.Sprintf("### [%s] %s\n", categoryName, k.Title))
 		sb.WriteString(fmt.Sprintf("%s\n\n", k.Content))
 	}
 
-	return sb.String()
+	return sb.String(), usedKnowledges
 }
 
 // getCategoryName - カテゴリIDを日本語名に変換

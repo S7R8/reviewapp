@@ -73,9 +73,18 @@ class KnowledgeApiClient {
 
   /**
    * ナレッジ詳細を取得（ID指定）
+   * 一覧からフィルタする方式で実装（詳細APIが未実装のため）
    */
   async getKnowledgeById(id: string): Promise<Knowledge> {
-    return await apiGet<Knowledge>(`/api/v1/knowledge/${id}`);
+    // 一覧を取得してIDでフィルタ
+    const allKnowledge = await this.listKnowledge();
+    const knowledge = allKnowledge.find(k => k.id === id);
+    
+    if (!knowledge) {
+      throw new Error(`Knowledge not found: ${id}`);
+    }
+    
+    return knowledge;
   }
 }
 

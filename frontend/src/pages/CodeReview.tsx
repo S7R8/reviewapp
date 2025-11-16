@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import Editor from '@monaco-editor/react';
 import Sidebar, { SidebarToggle } from '../components/Sidebar';
@@ -10,6 +11,7 @@ import { useReviewStore } from '../store/reviewStore';
 import { detectLanguage } from '../utils/languageDetector';
 import { createKnowledgeFromReview } from '../utils/knowledgeHelper';
 import { knowledgeApiClient, getCategoryLabel } from '../api/knowledgeApi';
+import { reviewApiClient } from '../api/reviewApi';
 import {
   Bookmark,
   ChevronRight,
@@ -17,7 +19,8 @@ import {
   CheckCircle2,
   X,
   AlertCircle,
-  Loader
+  Loader,
+  ArrowLeft
 } from 'lucide-react';
 
 const LANGUAGE_OPTIONS = [
@@ -33,7 +36,12 @@ const LANGUAGE_OPTIONS = [
 type ToastType = 'success' | 'error';
 
 export default function CodeReview() {
+  const { id: reviewId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
+  
+  // 閲覧モード判定
+  const isViewMode = !!reviewId;
   
   const { 
     currentReview, 
@@ -44,7 +52,8 @@ export default function CodeReview() {
     currentCode,
     currentLanguage,
     setCode,
-    reset
+    reset,
+    loadReviewById
   } = useReviewStore();
   
   const [code, setCodeLocal] = useState(currentCode);
@@ -55,14 +64,24 @@ export default function CodeReview() {
   // トースト通知
   const [toast, setToast] = useState<{ type: ToastType; message: string } | null>(null);
 
+  // 閲覧モード: レビュー履歴をロード
   useEffect(() => {
-    if (currentCode) {
+    if (reviewId && loadReviewById) {
+      loadReviewById(reviewId);
+    }
+  }, [reviewId, loadReviewById]);
+
+  // 通常モード: グローバル状態を復元
+  useEffect(() => {
+    if (!isViewMode && currentCode) {
       setCodeLocal(currentCode);
       setLanguageLocal(currentLanguage);
     }
-  }, []);
+  }, [isViewMode, currentCode, currentLanguage]);
 
   const handleCodeChange = (value: string | undefined) => {
+    if (isViewMode) return; // 閲覧モードでは編集不可
+    
     const newCode = value || '';
     setCodeLocal(newCode);
     
@@ -79,6 +98,8 @@ export default function CodeReview() {
   };
 
   const handleLanguageChange = (newLanguage: string) => {
+    if (isViewMode) return; // 閲覧モードでは変更不可
+    
     setLanguageLocal(newLanguage);
     setCode(code, newLanguage);
   };
@@ -100,20 +121,15 @@ export default function CodeReview() {
     await executeReview(code, language, `code.${getFileExtension(language)}`);
   };
 
-  // ★ ナレッジとして保存（シンプル版）
   const handleSaveAsKnowledge = async () => {
     if (!currentReview) return;
     
     setIsSaving(true);
     
     try {
-      // レビュー結果からナレッジを生成
       const knowledgeData = createKnowledgeFromReview(currentReview, language);
-      
-      // API呼び出し
       await knowledgeApiClient.createKnowledge(knowledgeData);
       
-      // 成功通知
       setToast({
         type: 'success',
         message: 'ナレッジを保存しました！'
@@ -122,7 +138,6 @@ export default function CodeReview() {
     } catch (error) {
       console.error('ナレッジ保存エラー:', error);
       
-      // エラー通知
       setToast({
         type: 'error',
         message: 'ナレッジの保存に失敗しました'
@@ -130,6 +145,10 @@ export default function CodeReview() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleBackToHistory = () => {
+    navigate('/history');
   };
 
   const getFileExtension = (lang: string): string => {
@@ -161,11 +180,25 @@ export default function CodeReview() {
         <div className="flex-1 flex flex-col p-6 lg:p-8 overflow-hidden animate-fade-in">
           <div className="flex flex-col gap-4 h-full">
             <header className="ml-12 flex-shrink-0">
-              <h1 className="text-[#111827] text-4xl font-black mb-2">
-                AIコードレビュー
-              </h1>
+              <div className="flex items-center gap-4 mb-2">
+                {isViewMode && (
+                  <button
+                    onClick={handleBackToHistory}
+                    className="flex items-center gap-2 text-[#6B7280] hover:text-[#111827] transition-colors"
+                  >
+                    <ArrowLeft size={20} />
+                    <span className="text-sm font-medium">履歴に戻る</span>
+                  </button>
+                )}
+                <h1 className="text-[#111827] text-4xl font-black">
+                  {isViewMode ? 'レビュー詳細' : 'AIコードレビュー'}
+                </h1>
+              </div>
               <p className="text-[#6B7280] text-base">
-                コードを貼り付けて、AIによるレビューを開始します。
+                {isViewMode 
+                  ? '過去のレビュー結果を表示しています（読み取り専用）'
+                  : 'コードを貼り付けて、AIによるレビューを開始します。'
+                }
               </p>
             </header>
 
@@ -178,7 +211,8 @@ export default function CodeReview() {
                     <select
                       value={language}
                       onChange={(e) => handleLanguageChange(e.target.value)}
-                      className="w-full h-12 px-4 rounded-lg border border-gray-300 bg-white text-[#111827] focus:border-[#FBBF24] focus:ring-[#FBBF24]"
+                      disabled={isViewMode}
+                      className="w-full h-12 px-4 rounded-lg border border-gray-300 bg-white text-[#111827] focus:border-[#FBBF24] focus:ring-[#FBBF24] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {LANGUAGE_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -188,13 +222,15 @@ export default function CodeReview() {
                     </select>
                   </label>
                   
-                  <button
-                    onClick={handleNewReview}
-                    className="px-4 h-12 border border-gray-300 text-[#111827] rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors mt-6 flex-shrink-0"
-                    title="新規レビューを開始"
-                  >
-                    🆕 新規
-                  </button>
+                  {!isViewMode && (
+                    <button
+                      onClick={handleNewReview}
+                      className="px-4 h-12 border border-gray-300 text-[#111827] rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors mt-6 flex-shrink-0"
+                      title="新規レビューを開始"
+                    >
+                      🆕 新規
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex-1 min-h-[500px] lg:min-h-0 rounded-xl overflow-hidden border border-gray-300 flex-shrink-0">
@@ -211,31 +247,34 @@ export default function CodeReview() {
                       lineNumbers: 'on',
                       scrollBeyondLastLine: false,
                       automaticLayout: true,
+                      readOnly: isViewMode, // 閲覧モードでは読み取り専用
                     }}
                   />
                 </div>
 
-                <button
-                  onClick={handleReview}
-                  disabled={isLoading || !code.trim()}
-                  className="w-full h-12 px-4 bg-[#FBBF24] text-[#111827] rounded-lg font-bold text-base hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 flex-shrink-0"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#111827]" />
-                      レビュー実行中...
-                    </>
-                  ) : (
-                    'レビュー実行'
-                  )}
-                </button>
+                {!isViewMode && (
+                  <button
+                    onClick={handleReview}
+                    disabled={isLoading || !code.trim()}
+                    className="w-full h-12 px-4 bg-[#FBBF24] text-[#111827] rounded-lg font-bold text-base hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 flex-shrink-0"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#111827]" />
+                        レビュー実行中...
+                      </>
+                    ) : (
+                      'レビュー実行'
+                    )}
+                  </button>
+                )}
               </div>
 
               {/* レビュー結果エリア */}
               <div className="lg:col-span-6 flex flex-col bg-white rounded-xl border border-gray-200 h-auto lg:h-full min-h-[600px] overflow-hidden">
                 <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                   <h2 className="text-lg font-bold text-[#111827]">レビュー結果</h2>
-                  {currentReview && (
+                  {currentReview && relatedKnowledge.length > 0 && (
                     <button
                       onClick={() => setShowKnowledge(!showKnowledge)}
                       className="flex items-center gap-2 px-4 h-9 bg-[#F4C753]/20 text-[#111827] rounded-lg text-sm font-medium hover:bg-[#F4C753]/30 transition-colors"
@@ -371,13 +410,16 @@ export default function CodeReview() {
                   ) : (
                     <div className="flex items-center justify-center h-full text-[#6B7280] p-6">
                       <p className="text-sm">
-                        コードを入力して「レビュー実行」をクリックしてください
+                        {isViewMode 
+                          ? 'レビュー結果を読み込んでいます...'
+                          : 'コードを入力して「レビュー実行」をクリックしてください'
+                        }
                       </p>
                     </div>
                   )}
                 </div>
 
-                {currentReview && (
+                {currentReview && !isViewMode && (
                   <div className="p-4 flex items-center justify-between border-t border-gray-200">
                     <FeedbackButtons />
                     
@@ -398,6 +440,12 @@ export default function CodeReview() {
                         </>
                       )}
                     </button>
+                  </div>
+                )}
+
+                {currentReview && isViewMode && (
+                  <div className="p-4 flex items-center justify-between border-t border-gray-200">
+                    <FeedbackButtons />
                   </div>
                 )}
               </div>

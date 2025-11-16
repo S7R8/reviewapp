@@ -37,7 +37,8 @@ func InitializeReviewHandler(db *sql.DB, cfg *config.Config) (*handler.ReviewHan
 	reviewCodeUseCase := review.NewReviewCodeUseCase(reviewRepository, knowledgeRepository, reviewService, claudeClient)
 	updateFeedbackUseCase := review.NewUpdateFeedbackUseCase(reviewRepository)
 	listReviewsUseCase := review.NewListReviewsUseCase(reviewRepository)
-	reviewHandler := handler.NewReviewHandler(reviewCodeUseCase, updateFeedbackUseCase, listReviewsUseCase)
+	getReviewUseCase := review.NewGetReviewUseCase(reviewRepository)
+	reviewHandler := handler.NewReviewHandler(reviewCodeUseCase, updateFeedbackUseCase, listReviewsUseCase, getReviewUseCase)
 	return reviewHandler, nil
 }
 

@@ -56,7 +56,8 @@ func (uc *ReviewCodeUseCase) Execute(ctx context.Context, input ReviewCodeInput)
 	}
 
 	// 2. LLMでレビュー生成（RAG: Augmented Generation）
-	knowledgePrompt := uc.reviewService.BuildPromptFromKnowledge(knowledges)
+	// 実際に使用したナレッジを取得
+	knowledgePrompt, usedKnowledges := uc.reviewService.BuildPromptFromKnowledge(knowledges)
 
 	// 3. レビューを保存
 	reviewResult, err := uc.claudeClient.ReviewCode(ctx, external.ReviewCodeInput{
@@ -80,8 +81,8 @@ func (uc *ReviewCodeUseCase) Execute(ctx context.Context, input ReviewCodeInput)
 		input.Context,
 	)
 
-	// 6. レビュー結果を設定
-	knowledgeIDs := extractKnowledgeIDs(knowledges)
+	// 6. レビュー結果を設定（実際に使用したナレッジIDのみ記録）
+	knowledgeIDs := extractKnowledgeIDs(usedKnowledges)
 	review.SetReviewResult(
 		reviewResult.ReviewResult,
 		structuredResult,
@@ -96,8 +97,8 @@ func (uc *ReviewCodeUseCase) Execute(ctx context.Context, input ReviewCodeInput)
 		return nil, fmt.Errorf("failed to save review: %w", err)
 	}
 
-	// 8. ナレッジの使用カウントを更新
-	if err := uc.updateKnowledgeUsage(ctx, knowledges); err != nil {
+	// 8. ナレッジの使用カウントを更新（実際に使用したナレッジのみ）
+	if err := uc.updateKnowledgeUsage(ctx, usedKnowledges); err != nil {
 		// 更新失敗してもレビュー結果は返す
 	}
 

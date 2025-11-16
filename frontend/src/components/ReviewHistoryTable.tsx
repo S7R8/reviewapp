@@ -107,12 +107,12 @@ const ReviewHistoryTable: React.FC<ReviewHistoryTableProps> = ({
         <tbody className="divide-y divide-gray-200">
           {items.map((item) => {
             // コードプレビュー（最初の50文字）
-            const codePreview = item.reviewContent 
-              ? item.reviewContent.substring(0, 60) + (item.reviewContent.length > 60 ? '...' : '')
+            const codePreview = item.code
+              ? item.code.substring(0, 60) + (item.code.length > 60 ? '...' : '')
               : 'コードなし';
-            
+
             const knowledgeCount = item.knowledgeReferences?.length || 0;
-            
+
             return (
               <tr
                 key={item.id}

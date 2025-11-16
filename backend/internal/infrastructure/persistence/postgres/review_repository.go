@@ -3,11 +3,13 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json" // ★ 追加
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/s7r8/reviewapp/internal/domain/model"
+	"github.com/s7r8/reviewapp/internal/infrastructure/parser"
 )
 
 // ReviewRepository - PostgreSQL実装
@@ -29,6 +31,18 @@ func (r *ReviewRepository) Create(ctx context.Context, review *model.Review) err
 	}
 	defer tx.Rollback()
 
+	// ★ StructuredResult を JSONB に変換
+	var reviewResultJSON []byte
+	if review.StructuredResult != nil {
+		reviewResultJSON, err = json.Marshal(review.StructuredResult)
+		if err != nil {
+			return fmt.Errorf("failed to marshal review result: %w", err)
+		}
+	} else {
+		// フォールバック: 空の構造化データ
+		reviewResultJSON = []byte(`{"summary":"","good_points":[],"improvements":[]}`)
+	}
+
 	// 1. reviewsテーブルにINSERT
 	query := `
 		INSERT INTO reviews (
@@ -46,7 +60,7 @@ func (r *ReviewRepository) Create(ctx context.Context, review *model.Review) err
 		review.Code,
 		review.Language,
 		review.Context,
-		review.ReviewResult,
+		reviewResultJSON,
 		review.LLMProvider,
 		review.LLMModel,
 		review.TokensUsed,
@@ -84,7 +98,7 @@ func (r *ReviewRepository) Create(ctx context.Context, review *model.Review) err
 	return nil
 }
 
-// FindByID - IDでレビューを取得（中間テーブルからナレッジIDを取得）
+// FindByID - IDでレビューを取得
 func (r *ReviewRepository) FindByID(ctx context.Context, id string) (*model.Review, error) {
 	// 1. reviewsテーブルから基本情報を取得
 	query := `
@@ -98,6 +112,7 @@ func (r *ReviewRepository) FindByID(ctx context.Context, id string) (*model.Revi
 
 	review := &model.Review{}
 	var context, llmProvider, llmModel, feedbackComment sql.NullString
+	var reviewResultJSON []byte
 	var feedbackScore sql.NullInt32
 	var deletedAt sql.NullTime
 
@@ -107,7 +122,7 @@ func (r *ReviewRepository) FindByID(ctx context.Context, id string) (*model.Revi
 		&review.Code,
 		&review.Language,
 		&context,
-		&review.ReviewResult,
+		&reviewResultJSON,
 		&llmProvider,
 		&llmModel,
 		&review.TokensUsed,
@@ -146,6 +161,17 @@ func (r *ReviewRepository) FindByID(ctx context.Context, id string) (*model.Revi
 		review.DeletedAt = &deletedAt.Time
 	}
 
+	// ★ JSONBから構造化データを復元
+	if len(reviewResultJSON) > 0 {
+		var structured model.StructuredReviewResult
+		if err := json.Unmarshal(reviewResultJSON, &structured); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal review result: %w", err)
+		}
+		review.StructuredResult = &structured
+		// ReviewResult には空文字列を設定（互換性のため）
+		review.ReviewResult = ""
+	}
+
 	// 2. review_knowledgeテーブルから参照されたナレッジIDを取得
 	knowledgeQuery := `
 		SELECT knowledge_id
@@ -170,6 +196,7 @@ func (r *ReviewRepository) FindByID(ctx context.Context, id string) (*model.Revi
 	}
 
 	review.ReferencedKnowledge = referencedKnowledge
+
 	return review, nil
 }
 
@@ -260,6 +287,7 @@ func (r *ReviewRepository) FindByUserID(ctx context.Context, userID string, limi
 		knowledgeRows.Close()
 
 		review.ReferencedKnowledge = referencedKnowledge
+
 		reviews = append(reviews, review)
 	}
 
@@ -328,6 +356,7 @@ func (r *ReviewRepository) ListWithFilters(ctx context.Context, userID string, f
 	for rows.Next() {
 		review := &model.Review{}
 		var context, llmProvider, llmModel, feedbackComment sql.NullString
+		var reviewResultJSON []byte
 		var feedbackScore sql.NullInt32
 
 		err := rows.Scan(
@@ -336,7 +365,7 @@ func (r *ReviewRepository) ListWithFilters(ctx context.Context, userID string, f
 			&review.Code,
 			&review.Language,
 			&context,
-			&review.ReviewResult,
+			&reviewResultJSON,
 			&llmProvider,
 			&llmModel,
 			&review.TokensUsed,
@@ -367,6 +396,14 @@ func (r *ReviewRepository) ListWithFilters(ctx context.Context, userID string, f
 			review.FeedbackComment = feedbackComment.String
 		}
 
+		// ★ JSONBから構造化データを復元
+		if len(reviewResultJSON) > 0 {
+			var structured model.StructuredReviewResult
+			json.Unmarshal(reviewResultJSON, &structured)
+			review.StructuredResult = &structured
+			review.ReviewResult = ""
+		}
+
 		// 各レビューの参照ナレッジを取得
 		knowledgeQuery := `
 			SELECT knowledge_id
@@ -391,6 +428,13 @@ func (r *ReviewRepository) ListWithFilters(ctx context.Context, userID string, f
 		knowledgeRows.Close()
 
 		review.ReferencedKnowledge = referencedKnowledge
+
+		// ★ markdownから構造化データをパース
+		if review.ReviewResult != "" {
+			structured := parser.ParseReviewMarkdown(review.ReviewResult)
+			review.StructuredResult = structured
+		}
+
 		reviews = append(reviews, review)
 	}
 
@@ -450,6 +494,17 @@ func (r *ReviewRepository) CountWithFilters(ctx context.Context, userID string, 
 
 // Update - レビューを更新
 func (r *ReviewRepository) Update(ctx context.Context, review *model.Review) error {
+	var reviewResultJSON []byte
+	var err error
+	if review.StructuredResult != nil {
+		reviewResultJSON, err = json.Marshal(review.StructuredResult)
+		if err != nil {
+			return fmt.Errorf("failed to marshal review result: %w", err)
+		}
+	} else {
+		reviewResultJSON = []byte(`{"summary":"","good_points":[],"improvements":[]}`)
+	}
+
 	query := `
 		UPDATE reviews
 		SET 
@@ -463,10 +518,10 @@ func (r *ReviewRepository) Update(ctx context.Context, review *model.Review) err
 		WHERE id = $8
 	`
 
-	_, err := r.db.ExecContext(
+	_, err = r.db.ExecContext(
 		ctx,
 		query,
-		review.ReviewResult,
+		reviewResultJSON, // ★ JSONB
 		review.LLMProvider,
 		review.LLMModel,
 		review.TokensUsed,

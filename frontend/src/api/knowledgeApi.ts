@@ -68,7 +68,14 @@ class KnowledgeApiClient {
    */
   async listKnowledge(category?: KnowledgeCategory): Promise<Knowledge[]> {
     const query = category ? `?category=${category}` : '';
-    return await apiGet<Knowledge[]>(`/api/v1/knowledge${query}`);
+    
+    // スケルトン表示のためにわざと遅延を追加（開発用）
+    const [data] = await Promise.all([
+      apiGet<Knowledge[]>(`/api/v1/knowledge${query}`),
+      new Promise(resolve => setTimeout(resolve, 300)), // 300ms遅延
+    ]);
+    
+    return data;
   }
 
   /**

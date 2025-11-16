@@ -110,8 +110,12 @@ export interface ReviewResult {
     source: string;
     description: string;
   }>;
-  referencedKnowledgeIds?: string[]; // ★ 追加
+  referencedKnowledgeIds?: string[];
   language?: string;
   createdAt: string;
   rawMarkdown: string;
+  // LLM情報
+  llmProvider?: string;
+  llmModel?: string;
+  tokensUsed?: number;
 }

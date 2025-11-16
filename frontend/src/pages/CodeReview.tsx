@@ -71,13 +71,22 @@ export default function CodeReview() {
     }
   }, [reviewId, loadReviewById]);
 
-  // 通常モード: グローバル状態を復元
+  // 閲覧モード・通常モード両方でグローバル状態を復元
   useEffect(() => {
-    if (!isViewMode && currentCode) {
-      setCodeLocal(currentCode);
-      setLanguageLocal(currentLanguage);
+    // currentCodeが空でも、閲覧モードの場合は反映（初回ロード後に更新される）
+    setCodeLocal(currentCode);
+    setLanguageLocal(currentLanguage);
+  }, [currentCode, currentLanguage]);
+
+  // 閲覧モード → 通常モード への遷移を検知してリセット
+  useEffect(() => {
+    // reviewIdがない（通常モード）かつ、以前のレビューデータが残っている場合
+    if (!reviewId && currentReview) {
+      reset();
+      setCodeLocal('');
+      setLanguageLocal('python');
     }
-  }, [isViewMode, currentCode, currentLanguage]);
+  }, [reviewId]); // reviewIdの変化のみを監視
 
   const handleCodeChange = (value: string | undefined) => {
     if (isViewMode) return; // 閲覧モードでは編集不可
@@ -251,6 +260,36 @@ export default function CodeReview() {
                     }}
                   />
                 </div>
+
+                {/* LLM情報表示（閲覧モードのみ） */}
+                {isViewMode && currentReview && (currentReview.llmProvider || currentReview.llmModel || currentReview.tokensUsed) && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex-shrink-0">
+                    <h3 className="text-sm font-semibold text-[#111827] mb-3 flex items-center gap-2">
+                      <AlertCircle size={16} className="text-[#F4C753]" />
+                      LLM情報
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                      {currentReview.llmProvider && (
+                        <div>
+                          <div className="text-[#6B7280] text-xs mb-1">プロバイダー</div>
+                          <div className="font-medium text-[#111827]">{currentReview.llmProvider}</div>
+                        </div>
+                      )}
+                      {currentReview.llmModel && (
+                        <div>
+                          <div className="text-[#6B7280] text-xs mb-1">モデル</div>
+                          <div className="font-medium text-[#111827]">{currentReview.llmModel}</div>
+                        </div>
+                      )}
+                      {currentReview.tokensUsed !== undefined && currentReview.tokensUsed !== null && (
+                        <div>
+                          <div className="text-[#6B7280] text-xs mb-1">使用トークン数</div>
+                          <div className="font-medium text-[#111827]">{currentReview.tokensUsed.toLocaleString()} tokens</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {!isViewMode && (
                   <button
@@ -446,6 +485,24 @@ export default function CodeReview() {
                 {currentReview && isViewMode && (
                   <div className="p-4 flex items-center justify-between border-t border-gray-200">
                     <FeedbackButtons />
+                    
+                    <button 
+                      onClick={handleSaveAsKnowledge}
+                      disabled={isSaving}
+                      className="flex items-center gap-2 px-4 h-10 bg-[#F4C753]/20 text-[#111827] rounded-lg text-sm font-bold hover:bg-[#F4C753]/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader size={16} className="animate-spin" />
+                          保存中...
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark size={16} />
+                          ナレッジとして保存
+                        </>
+                      )}
+                    </button>
                   </div>
                 )}
               </div>

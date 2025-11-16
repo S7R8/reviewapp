@@ -54,6 +54,7 @@ func InitializeReviewHandler(db *sql.DB, cfg *config.Config) (*handler.ReviewHan
 		review.NewReviewCodeUseCase,
 		review.NewUpdateFeedbackUseCase,
 		review.NewListReviewsUseCase,
+		review.NewGetReviewUseCase, // ★ 追加
 
 		// Handler
 		handler.NewReviewHandler,

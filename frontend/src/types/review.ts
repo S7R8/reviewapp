@@ -41,6 +41,7 @@ export type ProgrammingLanguage =
  */
 export interface ReviewHistoryItem {
   id: string;
+  code?: string;
   createdAt: string; // ISO 8601 format
   language: ProgrammingLanguage;
   status: ReviewStatus;
@@ -96,6 +97,7 @@ export interface ReviewRequest {
  */
 export interface ReviewResult {
   id: string;
+  code?: string;
   summary: string;
   goodPoints: string[];
   improvements: Array<{
@@ -109,6 +111,7 @@ export interface ReviewResult {
     description: string;
   }>;
   referencedKnowledgeIds?: string[]; // ★ 追加
+  language?: string;
   createdAt: string;
   rawMarkdown: string;
 }

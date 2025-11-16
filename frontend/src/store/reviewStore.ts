@@ -18,6 +18,9 @@ interface ReviewState {
   // レビュー実行（実際のAPI呼び出し）
   executeReview: (code: string, language: string, filename: string) => Promise<void>;
   
+  // レビュー履歴をIDで読み込み（閲覧モード）
+  loadReviewById: (reviewId: string) => Promise<void>;
+  
   // フィードバック送信
   submitFeedback: (score: number, comment?: string) => Promise<void>;
   
@@ -95,6 +98,52 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
       
       set({
         error: error instanceof Error ? error.message : 'レビューの実行に失敗しました',
+        isLoading: false,
+      });
+    }
+  },
+
+  // レビュー履歴をIDで読み込み（閲覧モード）
+  loadReviewById: async (reviewId: string) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      // レビュー詳細を取得
+      const review = await reviewApiClient.getReviewById(reviewId);
+      
+      // ナレッジ取得
+      let knowledgeList: Knowledge[] = [];
+      if (review.referencedKnowledgeIds && review.referencedKnowledgeIds.length > 0) {
+        try {
+          const knowledgeDetails = await Promise.all(
+            review.referencedKnowledgeIds.map(id => knowledgeApiClient.getKnowledgeById(id))
+          );
+          
+          knowledgeList = knowledgeDetails.map((k: ApiKnowledge) => ({
+            id: k.id,
+            title: k.title,
+            description: k.content,
+            category: k.category,
+            tags: [k.category],
+          }));
+        } catch (error) {
+          console.error('ナレッジ取得エラー:', error);
+          knowledgeList = [];
+        }
+      }
+
+      set({
+        currentReview: review,
+        relatedKnowledge: knowledgeList,
+        currentCode: review.code || '', // ★ 修正: APIから取得したコードを設定
+        currentLanguage: review.language || 'python',
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error('レビュー読み込みエラー:', error);
+      
+      set({
+        error: error instanceof Error ? error.message : 'レビューの読み込みに失敗しました',
         isLoading: false,
       });
     }

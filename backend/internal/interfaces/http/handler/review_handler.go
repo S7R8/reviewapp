@@ -15,6 +15,7 @@ type ReviewHandler struct {
 	reviewCodeUsecase     *review.ReviewCodeUseCase
 	updateFeedbackUsecase *review.UpdateFeedbackUseCase
 	listReviewsUsecase    *review.ListReviewsUseCase
+	getReviewUsecase      *review.GetReviewUseCase // ★ 追加
 }
 
 // NewReviewHandler - コンストラクタ
@@ -22,11 +23,13 @@ func NewReviewHandler(
 	reviewCodeUsecase *review.ReviewCodeUseCase,
 	updateFeedbackUsecase *review.UpdateFeedbackUseCase,
 	listReviewsUsecase *review.ListReviewsUseCase,
+	getReviewUsecase *review.GetReviewUseCase, // ★ 追加
 ) *ReviewHandler {
 	return &ReviewHandler{
 		reviewCodeUsecase:     reviewCodeUsecase,
 		updateFeedbackUsecase: updateFeedbackUsecase,
 		listReviewsUsecase:    listReviewsUsecase,
+		getReviewUsecase:      getReviewUsecase, // ★ 追加
 	}
 }
 
@@ -396,4 +399,90 @@ type ReviewListItem struct {
 	KnowledgeReferences []string  `json:"knowledge_references"`
 	CreatedAt           time.Time `json:"created_at"`
 	UpdatedAt           time.Time `json:"updated_at"`
+}
+
+// GetReviewByID - GET /api/v1/reviews/:id
+func (h *ReviewHandler) GetReviewByID(c echo.Context) error {
+	// 1. パスパラメータからReviewIDを取得
+	reviewID := c.Param("id")
+	if reviewID == "" {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "validation_error",
+			Message: "レビューIDは必須です",
+		})
+	}
+
+	// 2. ユーザーIDを取得
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, response.ErrorResponse{
+			Error:   "unauthorized",
+			Message: "ユーザー情報が見つかりません。/auth/syncを先に呼び出してください。",
+		})
+	}
+
+	// 3. UseCase実行
+	input := review.GetReviewInput{
+		ReviewID: reviewID,
+		UserID:   userID,
+	}
+
+	output, err := h.getReviewUsecase.Execute(c.Request().Context(), input)
+	if err != nil {
+		c.Logger().Errorf("GetReviewByID failed: %v", err)
+
+		// エラーの種類を判定
+		if err.Error() == "このレビューにアクセスする権限がありません" {
+			return c.JSON(http.StatusForbidden, response.ErrorResponse{
+				Error:   "forbidden",
+				Message: "このレビューにアクセスする権限がありません",
+			})
+		}
+
+		// レビューが見つからない
+		return c.JSON(http.StatusNotFound, response.ErrorResponse{
+			Error:   "not_found",
+			Message: "レビューが見つかりません",
+		})
+	}
+
+	// 4. 構造化データを含めてレスポンス
+	var structuredResult *StructuredReviewResult
+	if output.Review.StructuredResult != nil {
+		structuredResult = &StructuredReviewResult{
+			Summary:    output.Review.StructuredResult.Summary,
+			GoodPoints: output.Review.StructuredResult.GoodPoints,
+			Improvements: func() []Improvement {
+				improvements := make([]Improvement, len(output.Review.StructuredResult.Improvements))
+				for i, imp := range output.Review.StructuredResult.Improvements {
+					improvements[i] = Improvement{
+						Title:       imp.Title,
+						Description: imp.Description,
+						CodeAfter:   imp.CodeAfter,
+						Severity:    imp.Severity,
+					}
+				}
+				return improvements
+			}(),
+		}
+	}
+
+	responseData := ReviewCodeResponse{
+		ID:               output.Review.ID,
+		UserID:           output.Review.UserID,
+		Code:             output.Review.Code,
+		Language:         output.Review.Language,
+		Context:          output.Review.Context,
+		ReviewResult:     output.Review.ReviewResult,
+		StructuredResult: structuredResult,
+		UsedKnowledgeIDs: output.Review.ReferencedKnowledge,
+		LLMProvider:      output.Review.LLMProvider,
+		LLMModel:         output.Review.LLMModel,
+		TokensUsed:       output.Review.TokensUsed,
+		CreatedAt:        output.Review.CreatedAt,
+	}
+
+	// 5. ヘッダーにAPI Codeを追加
+	c.Response().Header().Set("X-API-Code", "RV-003")
+	return c.JSON(http.StatusOK, responseData)
 }

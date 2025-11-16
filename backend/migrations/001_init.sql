@@ -134,7 +134,7 @@ CREATE TABLE reviews (
     context TEXT,
     
     -- レビュー結果
-    review_result TEXT NOT NULL,
+    review_result JSONB NOT NULL,
     
     -- LLM情報
     llm_provider VARCHAR(50) NOT NULL,  -- 'claude', 'openai'

@@ -32,7 +32,7 @@ export default function Sidebar({ currentPage, isOpen, onToggle }: SidebarProps)
     { id: 'review', label: 'コードレビュー', icon: Code, path: '/review' },
     { id: 'knowledge', label: 'ナレッジベース', icon: Book, path: '/knowledge' },
     { id: 'history', label: '履歴', icon: History, path: '/history' },
-    { id: 'settings', label: '設定', icon: Settings, path: '/settings' },
+    // { id: 'settings', label: '設定', icon: Settings, path: '/settings' },
   ];
 
   if (!isOpen) {
@@ -75,8 +75,8 @@ export default function Sidebar({ currentPage, isOpen, onToggle }: SidebarProps)
                 key={item.id}
                 onClick={() => navigate(item.path)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive
-                    ? 'bg-[#F4C753]/20 text-[#111827]'
-                    : 'text-[#6B7280] hover:bg-gray-50'
+                  ? 'bg-[#F4C753]/20 text-[#111827]'
+                  : 'text-[#6B7280] hover:bg-gray-50'
                   }`}
               >
                 <Icon size={20} />
@@ -89,14 +89,6 @@ export default function Sidebar({ currentPage, isOpen, onToggle }: SidebarProps)
 
       {/* 下部ボタン */}
       <div className="mt-auto flex flex-col gap-4">
-        <button
-          onClick={() => navigate('/review')}
-          className="flex items-center justify-center gap-2 w-full h-10 px-4 bg-[#FBBF24] text-[#111827] rounded-lg font-bold text-sm hover:bg-amber-400 transition-colors"
-        >
-          <Plus size={20} />
-          新規レビュー
-        </button>
-
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#6B7280] hover:bg-gray-50 transition-colors"

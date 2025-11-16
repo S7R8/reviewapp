@@ -146,7 +146,7 @@ class ReviewApiClient {
     // スケルトン表示のためにわざと遅延を追加（開発用）
     const [data] = await Promise.all([
       apiGet<ApiReviewHistoryResponse>(endpoint),
-      new Promise(resolve => setTimeout(resolve, 800)), // 800ms遅延
+      new Promise(resolve => setTimeout(resolve, 300)), // 300ms遅延
     ]);
 
     // バックエンドのレスポンスをフロントエンドの型に変換

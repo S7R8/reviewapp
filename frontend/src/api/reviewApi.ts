@@ -18,9 +18,12 @@ interface ApiReviewResponse {
       severity: string;
     }>;
   };
-  used_knowledge_ids: string[];  // ★ フィールド名を修正
+  used_knowledge_ids: string[];
   feedback_score: number | null;
   feedback_comment: string | null;
+  llm_provider?: string;
+  llm_model?: string;
+  tokens_used?: number;
   created_at: string;
   updated_at: string;
 }
@@ -70,9 +73,12 @@ class ReviewApiClient {
         severity: imp.severity || 'medium',
       })),
       references: [],
-      referencedKnowledgeIds: data.used_knowledge_ids || [], // ★ 修正
+      referencedKnowledgeIds: data.used_knowledge_ids || [],
       createdAt: data.created_at,
       rawMarkdown: data.review_result,
+      llmProvider: data.llm_provider,
+      llmModel: data.llm_model,
+      tokensUsed: data.tokens_used,
     };
   }
 
@@ -112,6 +118,9 @@ class ReviewApiClient {
       language: data.language,
       createdAt: data.created_at,
       rawMarkdown: data.review_result,
+      llmProvider: data.llm_provider,
+      llmModel: data.llm_model,
+      tokensUsed: data.tokens_used,
     };
   }
 

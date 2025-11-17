@@ -93,6 +93,13 @@ class KnowledgeApiClient {
     
     return knowledge;
   }
+
+  /**
+   * ナレッジを削除（論理削除）
+   */
+  async deleteKnowledge(id: string): Promise<void> {
+    await apiDelete(`/api/v1/knowledge/${id}`);
+  }
 }
 
 export const knowledgeApiClient = new KnowledgeApiClient();

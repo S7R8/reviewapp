@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Plus } from 'lucide-react';
+import { useState } from 'react';
 import Sidebar, { SidebarToggle } from '../components/Sidebar';
 import { useSidebar } from '../hooks/useSidebar';
 import { useKnowledgeList } from '../hooks/useKnowledgeList';
@@ -7,7 +8,9 @@ import KnowledgeTable from '../components/KnowledgeTable';
 import Pagination from '../components/Pagination';
 import TableSkeleton from '../components/TableSkeleton';
 import { KnowledgeListItem } from '../types/knowledge';
-import { KnowledgeCategory, getCategoryLabel } from '../api/knowledgeApi';
+import { KnowledgeCategory, getCategoryLabel, knowledgeApiClient, KnowledgeCreateRequest } from '../api/knowledgeApi';
+import KnowledgeDetailModal from '../components/KnowledgeDetailModal';
+import KnowledgeCreateModal from '../components/KnowledgeCreateModal';
 
 const PRIORITY_OPTIONS = [
   { value: undefined, label: '全て' },
@@ -30,6 +33,9 @@ const CATEGORY_OPTIONS: Array<{ value: KnowledgeCategory | undefined; label: str
 export default function KnowledgePage() {
   const navigate = useNavigate();
   const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
+  const [selectedKnowledge, setSelectedKnowledge] = useState<KnowledgeListItem | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const {
     items,
@@ -53,8 +59,18 @@ export default function KnowledgePage() {
   };
 
   const handleItemClick = (item: KnowledgeListItem) => {
-    // TODO: ナレッジ詳細ページへ遷移（Phase 2）
-    console.log('ナレッジ詳細:', item);
+    setSelectedKnowledge(item);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    await knowledgeApiClient.deleteKnowledge(id);
+    await refetch();
+  };
+
+  const handleCreate = async (request: KnowledgeCreateRequest) => {
+    await knowledgeApiClient.createKnowledge(request);
+    await refetch();
   };
 
   return (
@@ -85,6 +101,13 @@ export default function KnowledgePage() {
             {/* フィルター */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
+                {/* 追加ボタン */}
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#FBBF24] hover:bg-[#F59E0B] text-white font-medium rounded-lg transition-colors"
+                >                  <Plus size={20} />
+                  追加
+                </button>
                 {/* カテゴリフィルタ */}
                 <select
                   value={filter.category || ''}
@@ -176,6 +199,26 @@ export default function KnowledgePage() {
           </div>
         </div>
       </main>
+
+      {/* ナレッジ詳細モーダル */}
+      {selectedKnowledge && (
+        <KnowledgeDetailModal
+          knowledge={selectedKnowledge}
+          isOpen={isDetailModalOpen}
+          onClose={() => {
+            setIsDetailModalOpen(false);
+            setSelectedKnowledge(null);
+          }}
+          onDelete={handleDelete}
+        />
+      )}
+
+      {/* ナレッジ作成モーダル */}
+      <KnowledgeCreateModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreate={handleCreate}
+      />
     </div>
   );
 }

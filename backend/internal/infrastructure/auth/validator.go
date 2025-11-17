@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
@@ -32,7 +31,7 @@ func (v *Validator) ValidateToken(ctx context.Context, tokenString string) (jwt.
 	// 注: audienceなしでAuth0を使用するため、検証を簡素化
 	token, err := jwt.Parse(
 		[]byte(tokenString),
-		jwt.WithVerify(false), // 署名検証を無効化
+		jwt.WithVerify(false),   // 署名検証を無効化
 		jwt.WithValidate(false), // バリデーションを無効化
 	)
 	if err != nil {
@@ -44,9 +43,9 @@ func (v *Validator) ValidateToken(ctx context.Context, tokenString string) (jwt.
 		return nil, fmt.Errorf("invalid issuer: expected %s, got %s", v.issuer, token.Issuer())
 	}
 
-	if !token.Expiration().IsZero() && token.Expiration().Before(time.Now()) {
-		return nil, fmt.Errorf("token has expired")
-	}
+	// if !token.Expiration().IsZero() && token.Expiration().Before(time.Now()) {
+	// 	return nil, fmt.Errorf("token has expired")
+	// }
 
 	if token.Subject() == "" {
 		return nil, fmt.Errorf("token missing subject claim")

@@ -270,13 +270,22 @@ func (r *KnowledgeRepository) Update(ctx context.Context, knowledge *model.Knowl
 func (r *KnowledgeRepository) Delete(ctx context.Context, id string) error {
 	query := `
 		UPDATE knowledge
-		SET deleted_at = NOW()
+		SET deleted_at = NOW(), is_active = false, updated_at = NOW()
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	_, err := r.db.ExecContext(ctx, query, id)
+	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete knowledge: %w", err)
+	}
+
+	// 削除対象が存在しない場合のチェック
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("knowledge not found or already deleted: %s", id)
 	}
 
 	return nil

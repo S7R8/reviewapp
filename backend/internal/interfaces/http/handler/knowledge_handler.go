@@ -13,16 +13,19 @@ import (
 type KnowledgeHandler struct {
 	createKnowledgeUC *knowledge.CreateKnowledgeUseCase
 	listKnowledgeUC   *knowledge.ListKnowledgeUseCase
+	deleteKnowledgeUC *knowledge.DeleteKnowledgeUseCase
 }
 
 // NewKnowledgeHandler - コンストラクタ
 func NewKnowledgeHandler(
 	createKnowledgeUC *knowledge.CreateKnowledgeUseCase,
 	listKnowledgeUC *knowledge.ListKnowledgeUseCase,
+	deleteKnowledgeUC *knowledge.DeleteKnowledgeUseCase,
 ) *KnowledgeHandler {
 	return &KnowledgeHandler{
 		createKnowledgeUC: createKnowledgeUC,
 		listKnowledgeUC:   listKnowledgeUC,
+		deleteKnowledgeUC: deleteKnowledgeUC,
 	}
 }
 
@@ -165,4 +168,48 @@ func validateCategory(category string) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "無効なカテゴリです")
 	}
 	return nil
+}
+
+// DeleteKnowledge - ナレッジ削除エンドポイント
+// DELETE /api/v1/knowledge/:id
+func (h *KnowledgeHandler) DeleteKnowledge(c echo.Context) error {
+	// 1. パスパラメータからIDを取得
+	knowledgeID := c.Param("id")
+	if knowledgeID == "" {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "invalid_request",
+			Message: "ナレッジIDが指定されていません",
+		})
+	}
+
+	// 2. ユーザーIDを取得
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, response.ErrorResponse{
+			Error:   "unauthorized",
+			Message: "ユーザー情報が見つかりません。/auth/syncを先に呼び出してください。",
+		})
+	}
+
+	// 3. UseCase実行
+	output, err := h.deleteKnowledgeUC.Execute(c.Request().Context(), knowledge.DeleteKnowledgeInput{
+		UserID:      userID,
+		KnowledgeID: knowledgeID,
+	})
+	if err != nil {
+		// 権限エラーまたは見つからない場合
+		return c.JSON(http.StatusNotFound, response.ErrorResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		})
+	}
+
+	// 4. レスポンスヘッダーに API Code を追加
+	c.Response().Header().Set("X-API-Code", "KN-003")
+
+	// 5. 成功レスポンス
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": output.Success,
+		"message": "ナレッジを削除しました",
+	})
 }

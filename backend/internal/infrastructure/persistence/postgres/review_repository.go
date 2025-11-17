@@ -206,7 +206,7 @@ func (r *ReviewRepository) FindByUserID(ctx context.Context, userID string, limi
 		SELECT 
 			id, user_id, code, language, context,
 			review_result, llm_provider, llm_model, tokens_used,
-			feedback_score, feedback_comment, created_at, updated_at, deleted_at
+			feedback_score, feedback_comment, created_at, updated_at
 		FROM reviews
 		WHERE user_id = $1 AND deleted_at IS NULL
 		ORDER BY created_at DESC
@@ -222,7 +222,8 @@ func (r *ReviewRepository) FindByUserID(ctx context.Context, userID string, limi
 	var reviews []*model.Review
 	for rows.Next() {
 		review := &model.Review{}
-		var fileName, context, llmProvider, llmModel, feedbackComment sql.NullString
+		var context, llmProvider, llmModel, feedbackComment sql.NullString
+		var reviewResultJSON []byte
 		var feedbackScore sql.NullInt32
 
 		err := rows.Scan(
@@ -230,9 +231,8 @@ func (r *ReviewRepository) FindByUserID(ctx context.Context, userID string, limi
 			&review.UserID,
 			&review.Code,
 			&review.Language,
-			&fileName,
 			&context,
-			&review.ReviewResult,
+			&reviewResultJSON,
 			&llmProvider,
 			&llmModel,
 			&review.TokensUsed,
@@ -261,6 +261,15 @@ func (r *ReviewRepository) FindByUserID(ctx context.Context, userID string, limi
 		}
 		if feedbackComment.Valid {
 			review.FeedbackComment = feedbackComment.String
+		}
+
+		// ★ JSONBから構造化データを復元
+		if len(reviewResultJSON) > 0 {
+			var structured model.StructuredReviewResult
+			if err := json.Unmarshal(reviewResultJSON, &structured); err == nil {
+				review.StructuredResult = &structured
+			}
+			review.ReviewResult = ""
 		}
 
 		// 各レビューの参照ナレッジを取得
@@ -556,27 +565,83 @@ func (r *ReviewRepository) FindRecentByUserID(ctx context.Context, userID string
 
 // UpdateFeedback - フィードバックを更新
 func (r *ReviewRepository) UpdateFeedback(ctx context.Context, reviewID string, score int, comment string) error {
+query := `
+UPDATE reviews
+SET feedback_score = $1,
+feedback_comment = $2,
+updated_at = NOW()
+WHERE id = $3 AND deleted_at IS NULL
+`
+
+result, err := r.db.ExecContext(ctx, query, score, comment, reviewID)
+if err != nil {
+return fmt.Errorf("failed to update feedback: %w", err)
+}
+
+rowsAffected, err := result.RowsAffected()
+if err != nil {
+return fmt.Errorf("failed to get rows affected: %w", err)
+}
+
+if rowsAffected == 0 {
+return fmt.Errorf("レビューが見つかりません: %s", reviewID)
+}
+
+return nil
+}
+
+// CountByUserID - ユーザーIDでレビュー総数を取得
+func (r *ReviewRepository) CountByUserID(ctx context.Context, userID string) (int, error) {
 	query := `
-		UPDATE reviews
-		SET feedback_score = $1,
-		    feedback_comment = $2,
-		    updated_at = NOW()
-		WHERE id = $3 AND deleted_at IS NULL
+		SELECT COUNT(*)
+		FROM reviews
+		WHERE user_id = $1 AND deleted_at IS NULL
 	`
 
-	result, err := r.db.ExecContext(ctx, query, score, comment, reviewID)
+	var count int
+	err := r.db.QueryRowContext(ctx, query, userID).Scan(&count)
 	if err != nil {
-		return fmt.Errorf("failed to update feedback: %w", err)
+		return 0, fmt.Errorf("failed to count reviews: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	return count, nil
+}
+
+// CountByUserIDAndDateRange - 期間内のレビュー数を取得
+func (r *ReviewRepository) CountByUserIDAndDateRange(ctx context.Context, userID string, from, to time.Time) (int, error) {
+	query := `
+		SELECT COUNT(*)
+		FROM reviews
+		WHERE user_id = $1 
+		  AND created_at >= $2 
+		  AND created_at <= $3
+		  AND deleted_at IS NULL
+	`
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, userID, from, to).Scan(&count)
 	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
+		return 0, fmt.Errorf("failed to count reviews by date range: %w", err)
 	}
 
-	if rowsAffected == 0 {
-		return fmt.Errorf("レビューが見つかりません: %s", reviewID)
+	return count, nil
+}
+
+// GetAverageFeedbackScore - フィードバックスコアの平均を取得
+func (r *ReviewRepository) GetAverageFeedbackScore(ctx context.Context, userID string) (float64, error) {
+	query := `
+		SELECT COALESCE(AVG(feedback_score), 0)
+		FROM reviews
+		WHERE user_id = $1 
+		  AND feedback_score IS NOT NULL
+		  AND deleted_at IS NULL
+	`
+
+	var average float64
+	err := r.db.QueryRowContext(ctx, query, userID).Scan(&average)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get average feedback score: %w", err)
 	}
 
-	return nil
+	return average, nil
 }

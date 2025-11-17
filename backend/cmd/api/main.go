@@ -87,6 +87,11 @@ func main() {
 		log.Fatalf("Failed to initialize review handler: %v", err)
 	}
 
+	dashboardHandler, err := di.InitializeDashboardHandler(db.DB)
+	if err != nil {
+		log.Fatalf("Failed to initialize dashboard handler: %v", err)
+	}
+
 	// 6. Echoサーバー初期化
 	e := echo.New()
 
@@ -168,6 +173,9 @@ func main() {
 	protected.GET("/reviews", reviewHandler.ListReviews)                 // RV-002: レビュー履歴一覧取得
 	protected.GET("/reviews/:id", reviewHandler.GetReviewByID)          // RV-003: レビュー詳細取得 ★ 追加
 	protected.PUT("/reviews/:id/feedback", reviewHandler.UpdateFeedback) // RV-004: フィードバック更新
+
+	// ダッシュボードエンドポイント（認証必須）
+	protected.GET("/dashboard/stats", dashboardHandler.GetStats) // DS-001: ダッシュボード統計取得
 
 	// 8. サーバー起動（グレースフルシャットダウン対応）
 	go func() {

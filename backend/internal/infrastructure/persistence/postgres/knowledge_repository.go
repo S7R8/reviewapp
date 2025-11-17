@@ -281,3 +281,49 @@ func (r *KnowledgeRepository) Delete(ctx context.Context, id string) error {
 
 	return nil
 }
+
+// CountByUserID - ユーザーIDでナレッジ総数を取得（有効なもののみ）
+func (r *KnowledgeRepository) CountByUserID(ctx context.Context, userID string) (int, error) {
+	query := `
+		SELECT COUNT(*)
+		FROM knowledge
+		WHERE user_id = $1 AND is_active = true AND deleted_at IS NULL
+	`
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, userID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count knowledge: %w", err)
+	}
+
+	return count, nil
+}
+
+// CountByCategory - カテゴリ別のナレッジ数を取得
+func (r *KnowledgeRepository) CountByCategory(ctx context.Context, userID string) (map[string]int, error) {
+	query := `
+		SELECT category, COUNT(*) as count
+		FROM knowledge
+		WHERE user_id = $1 AND is_active = true AND deleted_at IS NULL
+		GROUP BY category
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count by category: %w", err)
+	}
+	defer rows.Close()
+
+	categoryCounts := make(map[string]int)
+	for rows.Next() {
+		var category string
+		var count int
+		err := rows.Scan(&category, &count)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan category count: %w", err)
+		}
+		categoryCounts[category] = count
+	}
+
+	return categoryCounts, nil
+}

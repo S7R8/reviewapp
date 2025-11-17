@@ -7,6 +7,7 @@
 
 カテゴリ:
 - AU: Auth（認証）
+- DS: Dashboard（ダッシュボード）
 - KN: Knowledge（ナレッジ）
 - RV: Review（レビュー）
 - US: User（ユーザー）
@@ -18,6 +19,14 @@
 | API Code | Method | Endpoint | 概要 | Status | ドキュメント |
 |----------|--------|----------|------|--------|-------------|
 | AU-001 | POST | /api/v1/auth/sync | ユーザー同期（初回ログイン） | ✅ 完了 | [AU-001](./AU-001_user_sync.md) |
+
+## Dashboard APIs
+
+| API Code | Method | Endpoint | 概要 | Status | ドキュメント |
+|----------|--------|----------|------|--------|-----------|
+| DS-001 | GET | /api/v1/dashboard/stats | ダッシュボード統計取得 | ✅ 完了 | [DS-001](./DS-001_dashboard_stats.md) |
+
+---
 
 ## Knowledge APIs
 
@@ -82,3 +91,11 @@ X-Request-ID: uuid
 [req-123456] [KN-001] POST /api/v1/knowledge - Repository: INSERT成功
 [req-123456] [KN-001] POST /api/v1/knowledge - Handler: 201レスポンス
 ```
+
+---
+
+## 最近の更新
+
+- 2025-01-XX: DS-001 ダッシュボード統計APIを追加
+- 2025-01-XX: RV-002 レビュー履歴一覧APIの仕様作成完了
+- 2025-01-XX: RV-004 フィードバック更新API完了

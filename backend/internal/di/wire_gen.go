@@ -8,6 +8,7 @@ package di
 
 import (
 	"database/sql"
+	"github.com/s7r8/reviewapp/internal/application/usecase/dashboard"
 	"github.com/s7r8/reviewapp/internal/application/usecase/knowledge"
 	"github.com/s7r8/reviewapp/internal/application/usecase/review"
 	"github.com/s7r8/reviewapp/internal/domain/service"
@@ -40,6 +41,15 @@ func InitializeReviewHandler(db *sql.DB, cfg *config.Config) (*handler.ReviewHan
 	getReviewUseCase := review.NewGetReviewUseCase(reviewRepository)
 	reviewHandler := handler.NewReviewHandler(reviewCodeUseCase, updateFeedbackUseCase, listReviewsUseCase, getReviewUseCase)
 	return reviewHandler, nil
+}
+
+// InitializeDashboardHandler - DashboardHandlerを初期化（Wireが自動生成）
+func InitializeDashboardHandler(db *sql.DB) (*handler.DashboardHandler, error) {
+	reviewRepository := postgres.NewReviewRepository(db)
+	knowledgeRepository := postgres.NewKnowledgeRepository(db)
+	getStatsUseCase := dashboard.NewGetStatsUseCase(reviewRepository, knowledgeRepository)
+	dashboardHandler := handler.NewDashboardHandler(getStatsUseCase)
+	return dashboardHandler, nil
 }
 
 // wire.go:

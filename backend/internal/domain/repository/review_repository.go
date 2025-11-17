@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/s7r8/reviewapp/internal/domain/model"
 )
@@ -34,4 +35,13 @@ type ReviewRepository interface {
 
 	// CountWithFilters - フィルター条件に合致するレビューの総数を取得
 	CountWithFilters(ctx context.Context, userID string, filters map[string]interface{}) (int, error)
+
+	// CountByUserID - ユーザーIDでレビュー総数を取得
+	CountByUserID(ctx context.Context, userID string) (int, error)
+
+	// CountByUserIDAndDateRange - 期間内のレビュー数を取得
+	CountByUserIDAndDateRange(ctx context.Context, userID string, from, to time.Time) (int, error)
+
+	// GetAverageFeedbackScore - フィードバックスコアの平均を取得
+	GetAverageFeedbackScore(ctx context.Context, userID string) (float64, error)
 }

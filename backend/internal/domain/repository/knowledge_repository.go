@@ -28,4 +28,10 @@ type KnowledgeRepository interface {
 
 	// SearchByKeyword - キーワードで検索（フルテキスト検索）
 	// SearchByKeyword(ctx context.Context, userID, keyword string, limit int) ([]*model.Knowledge, error)
+
+	// CountByUserID - ユーザーIDでナレッジ総数を取得（有効なもののみ）
+	CountByUserID(ctx context.Context, userID string) (int, error)
+
+	// CountByCategory - カテゴリ別のナレッジ数を取得
+	CountByCategory(ctx context.Context, userID string) (map[string]int, error)
 }

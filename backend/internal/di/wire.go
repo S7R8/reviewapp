@@ -7,6 +7,7 @@ import (
 	"database/sql"
 
 	"github.com/google/wire"
+	"github.com/s7r8/reviewapp/internal/application/usecase/dashboard"
 	"github.com/s7r8/reviewapp/internal/application/usecase/knowledge"
 	"github.com/s7r8/reviewapp/internal/application/usecase/review"
 	"github.com/s7r8/reviewapp/internal/domain/repository"
@@ -58,6 +59,24 @@ func InitializeReviewHandler(db *sql.DB, cfg *config.Config) (*handler.ReviewHan
 
 		// Handler
 		handler.NewReviewHandler,
+	)
+	return nil, nil
+}
+
+// InitializeDashboardHandler - DashboardHandlerを初期化（Wireが自動生成）
+func InitializeDashboardHandler(db *sql.DB) (*handler.DashboardHandler, error) {
+	wire.Build(
+		// Repository
+		postgres.NewReviewRepository,
+		wire.Bind(new(repository.ReviewRepository), new(*postgres.ReviewRepository)),
+		postgres.NewKnowledgeRepository,
+		wire.Bind(new(repository.KnowledgeRepository), new(*postgres.KnowledgeRepository)),
+
+		// UseCase
+		dashboard.NewGetStatsUseCase,
+
+		// Handler
+		handler.NewDashboardHandler,
 	)
 	return nil, nil
 }

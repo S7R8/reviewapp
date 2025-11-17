@@ -4,6 +4,7 @@ import Sidebar, { SidebarToggle } from '../components/Sidebar';
 import { useSidebar } from '../hooks/useSidebar';
 import { useAuthStore } from '../store/authStore';
 import { DashboardSkeleton } from '../components/DashboardSkeleton';
+import { dashboardApiClient, DashboardStatsResponse } from '../api/dashboardApi';
 import {
   Code,
   Book,
@@ -18,57 +19,87 @@ export default function Dashboard() {
   const { user } = useAuthStore();
   const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
 
-  // 仮のローディング状態（API実装後に実際のローディングを使用）
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<DashboardStatsResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 仮のローディング（500ms後にデータ表示）
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 200);
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        console.log('[Dashboard] Fetching stats...');
+        const response = await dashboardApiClient.getStats();
+        console.log('[Dashboard] Stats received:', response);
+        setData(response);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch dashboard stats:', err);
+        setError('統計情報の取得に失敗しました');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    fetchStats();
   }, []);
 
-  // 仮データ
-  const stats = {
-    totalReviews: 127,
-    knowledgeCount: 89,
-    consistency: 87,
-    weeklyReviews: 23,
+  // データがない場合のデフォルト値
+  const stats = data ? {
+    totalReviews: data.stats.total_reviews,
+    knowledgeCount: data.stats.knowledge_count,
+    consistency: data.stats.consistency_score,
+    weeklyReviews: data.stats.weekly_reviews,
+  } : {
+    totalReviews: 0,
+    knowledgeCount: 0,
+    consistency: 0,
+    weeklyReviews: 0,
   };
 
-  const recentReviews = [
-    {
-      id: '1',
-      fileName: 'auth.go',
-      date: '2024-01-20',
-      status: 'completed',
-      improvements: 3,
-    },
-    {
-      id: '2',
-      fileName: 'user_service.js',
-      date: '2024-01-19',
-      status: 'completed',
-      improvements: 5,
-    },
-    {
-      id: '3',
-      fileName: 'api_handler.py',
-      date: '2024-01-18',
-      status: 'completed',
-      improvements: 2,
-    },
-  ];
+  const recentReviews = data ? data.recent_reviews.map(review => {
+    console.log('[Dashboard] Processing review:', review);
 
-  const skillRadar = {
-    errorHandling: 95,
-    testing: 80,
-    performance: 65,
-    security: 50,
-    documentation: 70,
+    // 言語名を日本語表示用に変換
+    const languageMap: { [key: string]: string } = {
+      'typescript': 'TypeScript',
+      'javascript': 'JavaScript',
+      'python': 'Python',
+      'go': 'Go',
+      'java': 'Java',
+      'rust': 'Rust',
+      'ruby': 'Ruby',
+      'php': 'PHP',
+    };
+
+    const displayName = languageMap[review.language.toLowerCase()] || review.language;
+
+    return {
+      id: review.id,
+      fileName: `${displayName} レビュー`,
+      date: new Date(review.created_at).toLocaleDateString('ja-JP'),
+      status: review.status,
+      improvements: review.improvements_count,
+    };
+  }) : [];
+
+  console.log('[Dashboard] Recent reviews:', recentReviews);
+
+  const skillRadar = data ? {
+    errorHandling: data.skill_analysis.error_handling,
+    testing: data.skill_analysis.testing,
+    performance: data.skill_analysis.performance,
+    security: data.skill_analysis.security,
+    documentation: data.skill_analysis.clean_code,
+  } : {
+    errorHandling: 0,
+    testing: 0,
+    performance: 0,
+    security: 0,
+    documentation: 0,
   };
+
+  console.log('[Dashboard] Skill analysis data:', data?.skill_analysis);
+  console.log('[Dashboard] Skill radar:', skillRadar);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f8f7f6]">
@@ -92,6 +123,13 @@ export default function Dashboard() {
               あなたのコーディング習慣とAIクローンの成長を確認しましょう
             </p>
           </header>
+
+          {/* エラー表示 */}
+          {error && (
+            <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
 
           {/* コンテンツ */}
           {loading ? (
@@ -150,33 +188,53 @@ export default function Dashboard() {
                     <h2 className="text-[#111827] text-xl font-bold mb-4">
                       最近のレビュー
                     </h2>
-                    <div className="space-y-4">
-                      {recentReviews.map((review) => (
-                        <div
-                          key={review.id}
-                          className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-[#F4C753] transition-colors cursor-pointer"
+                    {recentReviews.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Code className="mx-auto text-gray-400 mb-2" size={48} />
+                        <p className="text-gray-500 text-sm">レビュー履歴がありません</p>
+                        <button
+                          onClick={() => navigate('/review')}
+                          className="mt-4 px-4 py-2 bg-[#F4C753] text-white rounded-lg hover:bg-[#E5B84C] transition-colors"
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-lg bg-[#F4C753]/20 flex items-center justify-center">
-                              <Code className="text-[#F4C753]" size={20} />
+                          コードレビューを開始
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {recentReviews.map((review) => (
+                          <div
+                            key={review.id}
+                            className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-[#F4C753] transition-colors cursor-pointer"
+                            onClick={() => navigate(`/review/${review.id}`)}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-lg bg-[#F4C753]/20 flex items-center justify-center">
+                                <Code className="text-[#F4C753]" size={20} />
+                              </div>
+                              <div>
+                                <p className="text-[#111827] font-medium">
+                                  {review.fileName}
+                                </p>
+                                <p className="text-[#6B7280] text-sm">{review.date}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-[#111827] font-medium">
-                                {review.fileName}
-                              </p>
-                              <p className="text-[#6B7280] text-sm">{review.date}</p>
+                            <div className="flex items-center gap-3">
+                              <span className="flex items-center gap-1 text-[#6B7280] text-sm">
+                                <AlertCircle size={16} />
+                                {review.improvements}件の改善
+                              </span>
+                              {review.status === 'success' ? (
+                                <CheckCircle2 className="text-[#10B981]" size={20} />
+                              ) : review.status === 'warning' ? (
+                                <AlertCircle className="text-[#F4C753]" size={20} />
+                              ) : (
+                                <AlertCircle className="text-[#EF4444]" size={20} />
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="flex items-center gap-1 text-[#6B7280] text-sm">
-                              <AlertCircle size={16} />
-                              {review.improvements}件の改善
-                            </span>
-                            <CheckCircle2 className="text-[#10B981]" size={20} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -294,16 +352,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-
-              {/* 開発中メッセージ */}
-              {!loading && (
-                <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm text-green-800">
-                    ✅ Dashboard画面（仮実装）が動作しています<br />
-                    統計データは仮のデータです。バックエンド実装後に実際のデータを表示します。
-                  </p>
-                </div>
-              )}
             </>
           )}
         </div>

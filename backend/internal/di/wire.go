@@ -28,6 +28,7 @@ func InitializeKnowledgeHandler(db *sql.DB) (*handler.KnowledgeHandler, error) {
 		// UseCase
 		knowledge.NewCreateKnowledgeUseCase,
 		knowledge.NewListKnowledgeUseCase,
+		knowledge.NewDeleteKnowledgeUseCase,
 
 		// Handler
 		handler.NewKnowledgeHandler,

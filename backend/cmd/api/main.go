@@ -165,8 +165,9 @@ func main() {
 	protected.POST("/auth/sync", authHandler.SyncUser)
 
 	// ナレッジエンドポイント（認証必須）
-	protected.POST("/knowledge", knowledgeHandler.CreateKnowledge) // KN-001: ナレッジ作成
-	protected.GET("/knowledge", knowledgeHandler.ListKnowledge)    // KN-002: ナレッジ一覧取得
+	protected.POST("/knowledge", knowledgeHandler.CreateKnowledge)       // KN-001: ナレッジ作成
+	protected.GET("/knowledge", knowledgeHandler.ListKnowledge)          // KN-002: ナレッジ一覧取得
+	protected.DELETE("/knowledge/:id", knowledgeHandler.DeleteKnowledge) // KN-003: ナレッジ削除
 
 	// レビューエンドポイント（認証必須）
 	protected.POST("/reviews", reviewHandler.ReviewCode)                 // RV-001: コードレビュー実行

@@ -25,7 +25,8 @@ func InitializeKnowledgeHandler(db *sql.DB) (*handler.KnowledgeHandler, error) {
 	knowledgeRepository := postgres.NewKnowledgeRepository(db)
 	createKnowledgeUseCase := knowledge.NewCreateKnowledgeUseCase(knowledgeRepository)
 	listKnowledgeUseCase := knowledge.NewListKnowledgeUseCase(knowledgeRepository)
-	knowledgeHandler := handler.NewKnowledgeHandler(createKnowledgeUseCase, listKnowledgeUseCase)
+	deleteKnowledgeUseCase := knowledge.NewDeleteKnowledgeUseCase(knowledgeRepository)
+	knowledgeHandler := handler.NewKnowledgeHandler(createKnowledgeUseCase, listKnowledgeUseCase, deleteKnowledgeUseCase)
 	return knowledgeHandler, nil
 }
 

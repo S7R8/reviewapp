@@ -45,6 +45,14 @@ func main() {
 		log.Printf("✅ Claude API Key loaded (length: %d)\n", len(cfg.LLM.ClaudeAPIKey))
 	}
 
+	if cfg.LLM.OpenAIAPIKey == "" {
+		log.Println("⚠️  WARNING: OPENAI_API_KEY is not set!")
+	} else {
+		log.Printf("✅ OpenAI API Key loaded (length: %d, starts with: %s)\n",
+			len(cfg.LLM.OpenAIAPIKey),
+			cfg.LLM.OpenAIAPIKey)
+	}
+
 	// 2. データベース接続
 	db, err := postgres.NewDB(&cfg.Database)
 	if err != nil {
@@ -77,7 +85,7 @@ func main() {
 	fmt.Println("✅ Auth middleware initialized")
 
 	// 5. Wire で依存関係を自動解決
-	knowledgeHandler, err := di.InitializeKnowledgeHandler(db.DB)
+	knowledgeHandler, err := di.InitializeKnowledgeHandler(db.DB, cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize knowledge handler: %v", err)
 	}

@@ -25,8 +25,8 @@ func (r *KnowledgeRepository) Create(ctx context.Context, knowledge *model.Knowl
 		INSERT INTO knowledge (
 			id, user_id, title, content, category, priority,
 			source_type, source_id, usage_count, last_used_at,
-			is_active, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			embedding, is_active, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 	`
 	var embeddingVector interface{}
 	if knowledge.HasEmbedding() {
@@ -65,7 +65,7 @@ func (r *KnowledgeRepository) SearchByKeyword(ctx context.Context, userID, keywo
 		SELECT 
 			id, user_id, title, content, category, priority,
 			source_type, source_id, usage_count, last_used_at,
-			is_active, created_at, updated_at
+			embedding, is_active, created_at, updated_at
 		FROM knowledge
 		WHERE user_id = $1 
 			AND is_active = true 
@@ -120,7 +120,7 @@ func (r *KnowledgeRepository) FindByID(ctx context.Context, id string) (*model.K
 		SELECT 
 			id, user_id, title, content, category, priority,
 			source_type, source_id, usage_count, last_used_at,
-			is_active, created_at, updated_at
+			embedding,is_active, created_at, updated_at
 		FROM knowledge
 		WHERE id = $1 AND deleted_at IS NULL
 	`
@@ -164,7 +164,7 @@ func (r *KnowledgeRepository) FindByUserID(ctx context.Context, userID string) (
 		SELECT 
 			id, user_id, title, content, category, priority,
 			source_type, source_id, usage_count, last_used_at,
-			is_active, created_at, updated_at
+			embedding, is_active, created_at, updated_at
 		FROM knowledge
 		WHERE user_id = $1 AND is_active = true AND deleted_at IS NULL
 		ORDER BY priority DESC, created_at DESC
@@ -215,7 +215,7 @@ func (r *KnowledgeRepository) FindByCategory(ctx context.Context, userID, catego
 		SELECT 
 			id, user_id, title, content, category, priority,
 			source_type, source_id, usage_count, last_used_at,
-			is_active, created_at, updated_at
+			embedding, is_active, created_at, updated_at
 		FROM knowledge
 		WHERE user_id = $1 AND category = $2 AND is_active = true AND deleted_at IS NULL
 		ORDER BY priority DESC, created_at DESC
@@ -270,9 +270,10 @@ func (r *KnowledgeRepository) Update(ctx context.Context, knowledge *model.Knowl
 			priority = $4,
 			usage_count = $5,
 			last_used_at = $6,
-			is_active = $7,
-			updated_at = $8
-		WHERE id = $9 AND deleted_at IS NULL
+			embedding = $7,
+			is_active = $8,
+			updated_at = $9
+		WHERE id = $10 AND deleted_at IS NULL
 	`
 
 	// EmbeddingをPostgreSQL vector型に変換

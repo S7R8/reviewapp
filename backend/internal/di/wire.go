@@ -55,6 +55,9 @@ func InitializeReviewHandler(db *sql.DB, cfg *config.Config) (*handler.ReviewHan
 		ProvideClaudeClient,
 		wire.Bind(new(external.ClaudeClientInterface), new(*external.ClaudeClient)),
 
+		ProvideOpenAIClient,
+		wire.Bind(new(external.EmbeddingClientInterface), new(*external.OpenAIClient)),
+
 		// UseCase
 		review.NewReviewCodeUseCase,
 		review.NewUpdateFeedbackUseCase,

@@ -32,6 +32,16 @@ type KnowledgeRepository interface {
 	// CountByUserID - ユーザーIDでナレッジ総数を取得（有効なもののみ）
 	CountByUserID(ctx context.Context, userID string) (int, error)
 
+	// SearchBySimilarity - ベクトル類似度検索（RAG用）
+	// embedding: 検索クエリのEmbeddingベクトル
+	// limit: 取得する最大件数
+	// threshold: 類似度の閾値
+	SearchBySimilarity(ctx context.Context, userID string, embedding []float32, limit int, threshold float64) ([]*model.Knowledge, error)
+
+	// FindWithoutEmbedding - Embeddingが未設定のナレッジを取得
+	// limit: 取得する最大件数（0の場合は全件）
+	FindWithoutEmbedding(ctx context.Context, limit int) ([]*model.Knowledge, error)
+
 	// CountByCategory - カテゴリ別のナレッジ数を取得
 	CountByCategory(ctx context.Context, userID string) (map[string]int, error)
 }

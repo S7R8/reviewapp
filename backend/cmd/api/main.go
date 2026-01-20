@@ -168,11 +168,12 @@ func main() {
 	protected.POST("/knowledge", knowledgeHandler.CreateKnowledge)       // KN-001: ナレッジ作成
 	protected.GET("/knowledge", knowledgeHandler.ListKnowledge)          // KN-002: ナレッジ一覧取得
 	protected.DELETE("/knowledge/:id", knowledgeHandler.DeleteKnowledge) // KN-003: ナレッジ削除
+	protected.PUT("/knowledge/:id", knowledgeHandler.UpdateKnowledge)    // KN-004: ナレッジ更新
 
 	// レビューエンドポイント（認証必須）
 	protected.POST("/reviews", reviewHandler.ReviewCode)                 // RV-001: コードレビュー実行
 	protected.GET("/reviews", reviewHandler.ListReviews)                 // RV-002: レビュー履歴一覧取得
-	protected.GET("/reviews/:id", reviewHandler.GetReviewByID)          // RV-003: レビュー詳細取得 ★ 追加
+	protected.GET("/reviews/:id", reviewHandler.GetReviewByID)           // RV-003: レビュー詳細取得 ★ 追加
 	protected.PUT("/reviews/:id/feedback", reviewHandler.UpdateFeedback) // RV-004: フィードバック更新
 
 	// ダッシュボードエンドポイント（認証必須）

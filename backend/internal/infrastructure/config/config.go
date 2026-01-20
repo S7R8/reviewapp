@@ -54,6 +54,7 @@ type LLMConfig struct {
 	OpenAIAPIKey    string
 	OpenAIEmbedding string
 	EmbeddingDim    int
+	OpenAITimeout   time.Duration
 }
 
 // RedisConfig - Redis設定
@@ -104,6 +105,7 @@ func Load() (*Config, error) {
 			OpenAIAPIKey:    getEnv("OPENAI_API_KEY", ""),
 			OpenAIEmbedding: getEnv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small"),
 			EmbeddingDim:    getEnvAsInt("OPENAI_EMBEDDING_DIMENSIONS", 1536),
+			OpenAITimeout:   getEnvAsDuration("OPENAI_API_TIMEOUT", "30s"),
 		},
 		Redis: RedisConfig{
 			URL:      getEnv("REDIS_URL", "redis://localhost:6379"),

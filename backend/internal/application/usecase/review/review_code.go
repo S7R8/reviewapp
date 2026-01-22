@@ -71,8 +71,8 @@ func (uc *ReviewCodeUseCase) Execute(ctx context.Context, input ReviewCodeInput)
 		ctx,
 		input.UserID,
 		embedding,
-		10,  // Top-10ナレッジを取得
-		0.7, // 類似度70%以上のものだけ
+		10,   // Top-10ナレッジを取得
+		0.35, // 類似度35%以上のものだけ
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search knowledge by similarity: %w", err)
@@ -80,7 +80,7 @@ func (uc *ReviewCodeUseCase) Execute(ctx context.Context, input ReviewCodeInput)
 
 	// ナレッジが見つからない場合のログ
 	if len(knowledges) == 0 {
-		log.Printf("No knowledge found with similarity >= 0.7 for user %s", input.UserID)
+		log.Printf("No knowledge found with similarity >= 0.35 for user %s", input.UserID)
 	} else {
 		log.Printf("Found %d relevant knowledge items for review", len(knowledges))
 	}

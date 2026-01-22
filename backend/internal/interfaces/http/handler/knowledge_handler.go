@@ -112,6 +112,8 @@ func validateCreateKnowledgeRequest(req *CreateKnowledgeRequest) error {
 	return nil
 }
 
+// ListKnowledge - ナレッジ一覧取得エンドポイント
+// GET /api/v1/knowledge
 func (h *KnowledgeHandler) ListKnowledge(c echo.Context) error {
 	// 1．クエリパラメータを取得
 	category := c.QueryParam("category")
@@ -142,6 +144,7 @@ func (h *KnowledgeHandler) ListKnowledge(c echo.Context) error {
 	})
 	if err != nil {
 		// DBエラーなど
+		c.Logger().Errorf("ListKnowledge failed: %v", err)
 		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
 			Error:   "internal_error",
 			Message: "サーバーエラーが発生しました",

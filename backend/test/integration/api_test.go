@@ -36,7 +36,7 @@ func TestReviewAPI_Integration(t *testing.T) {
 	}
 
 	// ハンドラーを初期化（実際のDIを使用）
-	knowledgeHandler, err := di.InitializeKnowledgeHandler(testDB.DB)
+	knowledgeHandler, err := di.InitializeKnowledgeHandler(testDB.DB, cfg)
 	if err != nil {
 		t.Fatalf("Failed to initialize knowledge handler: %v", err)
 	}

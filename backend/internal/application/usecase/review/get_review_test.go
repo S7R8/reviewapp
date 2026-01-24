@@ -32,8 +32,40 @@ func (m *MockReviewRepositoryForGet) Update(ctx context.Context, review *model.R
 	return nil
 }
 
-func (m *MockReviewRepositoryForGet) FindByUserID(ctx context.Context, userID string, page, pageSize int) ([]*model.Review, int, error) {
-	return nil, 0, nil
+func (m *MockReviewRepositoryForGet) Delete(ctx context.Context, id string) error {
+	return nil
+}
+
+func (m *MockReviewRepositoryForGet) FindByUserID(ctx context.Context, userID string, limit int) ([]*model.Review, error) {
+	return nil, nil
+}
+
+func (m *MockReviewRepositoryForGet) FindRecentByUserID(ctx context.Context, userID string, limit int) ([]*model.Review, error) {
+	return nil, nil
+}
+
+func (m *MockReviewRepositoryForGet) UpdateFeedback(ctx context.Context, reviewID string, score int, comment string) error {
+	return nil
+}
+
+func (m *MockReviewRepositoryForGet) ListWithFilters(ctx context.Context, userID string, filters map[string]interface{}, sortBy, sortOrder string, limit, offset int) ([]*model.Review, error) {
+	return nil, nil
+}
+
+func (m *MockReviewRepositoryForGet) CountWithFilters(ctx context.Context, userID string, filters map[string]interface{}) (int, error) {
+	return 0, nil
+}
+
+func (m *MockReviewRepositoryForGet) CountByUserID(ctx context.Context, userID string) (int, error) {
+	return 0, nil
+}
+
+func (m *MockReviewRepositoryForGet) CountByUserIDAndDateRange(ctx context.Context, userID string, from, to time.Time) (int, error) {
+	return 0, nil
+}
+
+func (m *MockReviewRepositoryForGet) GetAverageFeedbackScore(ctx context.Context, userID string) (float64, error) {
+	return 0.0, nil
 }
 
 // TestGetReviewUseCase_Execute - 正常系テスト
@@ -133,6 +165,123 @@ func TestGetReviewUseCase_Execute_Forbidden(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, output)
 	assert.Contains(t, err.Error(), "このレビューにアクセスする権限がありません")
+
+	mockRepo.AssertExpectations(t)
+}
+
+// TestGetReviewUseCase_Execute_EmptyReviewID - ReviewIDが空の場合
+func TestGetReviewUseCase_Execute_EmptyReviewID(t *testing.T) {
+	mockRepo := new(MockReviewRepositoryForGet)
+	usecase := NewGetReviewUseCase(mockRepo)
+
+	input := GetReviewInput{
+		ReviewID: "",
+		UserID:   "user-456",
+	}
+
+	output, err := usecase.Execute(context.Background(), input)
+
+	assert.Error(t, err)
+	assert.Nil(t, output)
+	assert.Contains(t, err.Error(), "review ID is required")
+}
+
+// TestGetReviewUseCase_Execute_EmptyUserID - UserIDが空の場合
+func TestGetReviewUseCase_Execute_EmptyUserID(t *testing.T) {
+	mockRepo := new(MockReviewRepositoryForGet)
+	usecase := NewGetReviewUseCase(mockRepo)
+
+	input := GetReviewInput{
+		ReviewID: "review-123",
+		UserID:   "",
+	}
+
+	output, err := usecase.Execute(context.Background(), input)
+
+	assert.Error(t, err)
+	assert.Nil(t, output)
+	assert.Contains(t, err.Error(), "user ID is required")
+}
+
+// TestGetReviewUseCase_Execute_WithStructuredResult - 構造化結果を含む場合
+func TestGetReviewUseCase_Execute_WithStructuredResult(t *testing.T) {
+	mockRepo := new(MockReviewRepositoryForGet)
+	usecase := NewGetReviewUseCase(mockRepo)
+
+	reviewID := "review-123"
+	userID := "user-456"
+
+	review := &model.Review{
+		ID:           reviewID,
+		UserID:       userID,
+		Code:         "test code",
+		Language:     "go",
+		ReviewResult: "test review",
+		StructuredResult: &model.StructuredReviewResult{
+			Summary:    "Good code overall",
+			GoodPoints: []string{"Clean", "Well documented"},
+			Improvements: []model.Improvement{
+				{
+					Title:       "Optimization needed",
+					Description: "Can be optimized",
+					Severity:    "medium",
+				},
+			},
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	mockRepo.On("FindByID", mock.Anything, reviewID).Return(review, nil)
+
+	input := GetReviewInput{
+		ReviewID: reviewID,
+		UserID:   userID,
+	}
+
+	output, err := usecase.Execute(context.Background(), input)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, output)
+	assert.NotNil(t, output.Review.StructuredResult)
+	assert.Equal(t, "Good code overall", output.Review.StructuredResult.Summary)
+	assert.Len(t, output.Review.StructuredResult.Improvements, 1)
+
+	mockRepo.AssertExpectations(t)
+}
+
+// TestGetReviewUseCase_Execute_WithReferencedKnowledge - 参照ナレッジを含む場合
+func TestGetReviewUseCase_Execute_WithReferencedKnowledge(t *testing.T) {
+	mockRepo := new(MockReviewRepositoryForGet)
+	usecase := NewGetReviewUseCase(mockRepo)
+
+	reviewID := "review-123"
+	userID := "user-456"
+
+	review := &model.Review{
+		ID:                  reviewID,
+		UserID:              userID,
+		Code:                "test code",
+		Language:            "go",
+		ReviewResult:        "test review",
+		ReferencedKnowledge: []string{"knowledge-1", "knowledge-2"},
+		CreatedAt:           time.Now(),
+		UpdatedAt:           time.Now(),
+	}
+
+	mockRepo.On("FindByID", mock.Anything, reviewID).Return(review, nil)
+
+	input := GetReviewInput{
+		ReviewID: reviewID,
+		UserID:   userID,
+	}
+
+	output, err := usecase.Execute(context.Background(), input)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, output)
+	assert.Len(t, output.Review.ReferencedKnowledge, 2)
+	assert.Equal(t, "knowledge-1", output.Review.ReferencedKnowledge[0])
 
 	mockRepo.AssertExpectations(t)
 }

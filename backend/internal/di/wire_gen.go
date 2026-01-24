@@ -21,12 +21,14 @@ import (
 // Injectors from wire.go:
 
 // InitializeKnowledgeHandler - KnowledgeHandlerを初期化（Wireが自動生成）
-func InitializeKnowledgeHandler(db *sql.DB) (*handler.KnowledgeHandler, error) {
+func InitializeKnowledgeHandler(db *sql.DB, cfg *config.Config) (*handler.KnowledgeHandler, error) {
 	knowledgeRepository := postgres.NewKnowledgeRepository(db)
-	createKnowledgeUseCase := knowledge.NewCreateKnowledgeUseCase(knowledgeRepository)
+	openAIClient := ProvideOpenAIClient(cfg)
+	createKnowledgeUseCase := knowledge.NewCreateKnowledgeUseCase(knowledgeRepository, openAIClient)
+	updateKnowledgeUseCase := knowledge.NewUpdateKnowledgeUseCase(knowledgeRepository, openAIClient)
 	listKnowledgeUseCase := knowledge.NewListKnowledgeUseCase(knowledgeRepository)
 	deleteKnowledgeUseCase := knowledge.NewDeleteKnowledgeUseCase(knowledgeRepository)
-	knowledgeHandler := handler.NewKnowledgeHandler(createKnowledgeUseCase, listKnowledgeUseCase, deleteKnowledgeUseCase)
+	knowledgeHandler := handler.NewKnowledgeHandler(createKnowledgeUseCase, updateKnowledgeUseCase, listKnowledgeUseCase, deleteKnowledgeUseCase)
 	return knowledgeHandler, nil
 }
 
@@ -36,7 +38,8 @@ func InitializeReviewHandler(db *sql.DB, cfg *config.Config) (*handler.ReviewHan
 	knowledgeRepository := postgres.NewKnowledgeRepository(db)
 	reviewService := service.NewReviewService()
 	claudeClient := ProvideClaudeClient(cfg)
-	reviewCodeUseCase := review.NewReviewCodeUseCase(reviewRepository, knowledgeRepository, reviewService, claudeClient)
+	openAIClient := ProvideOpenAIClient(cfg)
+	reviewCodeUseCase := review.NewReviewCodeUseCase(reviewRepository, knowledgeRepository, reviewService, claudeClient, openAIClient)
 	updateFeedbackUseCase := review.NewUpdateFeedbackUseCase(reviewRepository)
 	listReviewsUseCase := review.NewListReviewsUseCase(reviewRepository)
 	getReviewUseCase := review.NewGetReviewUseCase(reviewRepository)
@@ -61,5 +64,14 @@ func ProvideClaudeClient(cfg *config.Config) *external.ClaudeClient {
 		cfg.LLM.ClaudeAPIKey,
 		cfg.LLM.ClaudeModel,
 		cfg.LLM.ClaudeMaxTokens,
+	)
+}
+
+// ProvideOpenAIClient - OpenAIClientのプロバイダ
+func ProvideOpenAIClient(cfg *config.Config) *external.OpenAIClient {
+	return external.NewOpenAIClient(
+		cfg.LLM.OpenAIAPIKey,
+		cfg.LLM.OpenAIEmbedding,
+		cfg.LLM.OpenAITimeout,
 	)
 }

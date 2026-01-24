@@ -20,6 +20,7 @@ type Knowledge struct {
 	SourceID   *string    `json:"source_id"`
 	UsageCount int        `json:"usage_count"`
 	LastUsedAt *time.Time `json:"last_used_at"`
+	Embedding  []float32  `json:"-"`
 	IsActive   bool       `json:"is_active"`
 	CreatedAt  time.Time  `json:"created_at"`
 	UpdatedAt  time.Time  `json:"updated_at"`
@@ -196,8 +197,29 @@ func (k *Knowledge) UpdateContent(title, content, category string, priority int)
 	return k.Validate()
 }
 
-// KnowledgeWithEmbedding - Embeddingを含むナレッジ（RAG用）
-type KnowledgeWithEmbedding struct {
-	Knowledge
-	Embedding []float32 `json:"-"` // JSONには出力しない
+// SetEmbedding - Embeddingベクトルを設定
+func (k *Knowledge) SetEmbedding(embedding []float32) {
+	k.Embedding = embedding
+	k.UpdatedAt = time.Now()
+}
+
+// HasEmbedding - Embeddingが設定されているか確認
+func (k *Knowledge) HasEmbedding() bool {
+	return k.Embedding != nil && len(k.Embedding) > 0
+}
+
+// GetEmbedding - Embeddingを取得
+func (k *Knowledge) GetEmbedding() []float32 {
+	if !k.HasEmbedding() {
+		return nil
+	}
+	embedding := make([]float32, len(k.Embedding))
+	copy(embedding, k.Embedding)
+	return embedding
+}
+
+// ClearEmbedding - Embeddingをクリア
+func (k *Knowledge) ClearEmbedding() {
+	k.Embedding = nil
+	k.UpdatedAt = time.Now()
 }

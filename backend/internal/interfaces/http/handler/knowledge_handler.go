@@ -12,6 +12,7 @@ import (
 // KnowledgeHandler - ナレッジ関連のHTTPハンドラ
 type KnowledgeHandler struct {
 	createKnowledgeUC *knowledge.CreateKnowledgeUseCase
+	updateKnowledgeUC *knowledge.UpdateKnowledgeUseCase
 	listKnowledgeUC   *knowledge.ListKnowledgeUseCase
 	deleteKnowledgeUC *knowledge.DeleteKnowledgeUseCase
 }
@@ -19,11 +20,13 @@ type KnowledgeHandler struct {
 // NewKnowledgeHandler - コンストラクタ
 func NewKnowledgeHandler(
 	createKnowledgeUC *knowledge.CreateKnowledgeUseCase,
+	updateKnowledgeUC *knowledge.UpdateKnowledgeUseCase,
 	listKnowledgeUC *knowledge.ListKnowledgeUseCase,
 	deleteKnowledgeUC *knowledge.DeleteKnowledgeUseCase,
 ) *KnowledgeHandler {
 	return &KnowledgeHandler{
 		createKnowledgeUC: createKnowledgeUC,
+		updateKnowledgeUC: updateKnowledgeUC,
 		listKnowledgeUC:   listKnowledgeUC,
 		deleteKnowledgeUC: deleteKnowledgeUC,
 	}
@@ -109,6 +112,8 @@ func validateCreateKnowledgeRequest(req *CreateKnowledgeRequest) error {
 	return nil
 }
 
+// ListKnowledge - ナレッジ一覧取得エンドポイント
+// GET /api/v1/knowledge
 func (h *KnowledgeHandler) ListKnowledge(c echo.Context) error {
 	// 1．クエリパラメータを取得
 	category := c.QueryParam("category")
@@ -139,6 +144,7 @@ func (h *KnowledgeHandler) ListKnowledge(c echo.Context) error {
 	})
 	if err != nil {
 		// DBエラーなど
+		c.Logger().Errorf("ListKnowledge failed: %v", err)
 		return c.JSON(http.StatusInternalServerError, response.ErrorResponse{
 			Error:   "internal_error",
 			Message: "サーバーエラーが発生しました",
@@ -212,4 +218,96 @@ func (h *KnowledgeHandler) DeleteKnowledge(c echo.Context) error {
 		"success": output.Success,
 		"message": "ナレッジを削除しました",
 	})
+}
+
+// UpdateKnowledgeRequest - 更新リクエストボディ
+type UpdateKnowledgeRequest struct {
+	Title    string `json:"title" validate:"required,max=200"`
+	Content  string `json:"content" validate:"required"`
+	Category string `json:"category" validate:"required"`
+	Priority int    `json:"priority" validate:"required,min=1,max=5"`
+}
+
+// UpdateKnowledge - ナレッジ更新エンドポイント
+// PUT /api/v1/knowledge/:id
+func (h *KnowledgeHandler) UpdateKnowledge(c echo.Context) error {
+	// 1. パスパラメータからIDを取得
+	knowledgeID := c.Param("id")
+	if knowledgeID == "" {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "invalid_request",
+			Message: "ナレッジIDが指定されていません",
+		})
+	}
+
+	// 2. リクエストボディをパース
+	var req UpdateKnowledgeRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "invalid_request",
+			Message: "リクエストボディが不正です",
+		})
+	}
+
+	// 3. バリデーション
+	if err := validateUpdateKnowledgeRequest(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "validation_error",
+			Message: err.Error(),
+		})
+	}
+
+	// 4. ユーザーIDを取得
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, response.ErrorResponse{
+			Error:   "unauthorized",
+			Message: "ユーザー情報が見つかりません",
+		})
+	}
+
+	// 5. UseCase実行
+	output, err := h.updateKnowledgeUC.Execute(c.Request().Context(), knowledge.UpdateKnowledgeInput{
+		UserID:      userID,
+		KnowledgeID: knowledgeID,
+		Title:       req.Title,
+		Content:     req.Content,
+		Category:    req.Category,
+		Priority:    req.Priority,
+	})
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error:   "update_failed",
+			Message: err.Error(),
+		})
+	}
+
+	// 6. レスポンスヘッダーに API Code を追加
+	c.Response().Header().Set("X-API-Code", "KN-004")
+
+	// 7. 成功レスポンス
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": output.Success,
+		"message": output.Message,
+	})
+}
+
+// validateUpdateKnowledgeRequest - 更新リクエストバリデーション
+func validateUpdateKnowledgeRequest(req *UpdateKnowledgeRequest) error {
+	if req.Title == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "タイトルは必須です")
+	}
+	if len(req.Title) > 200 {
+		return echo.NewHTTPError(http.StatusBadRequest, "タイトルは200文字以内にしてください")
+	}
+	if req.Content == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "内容は必須です")
+	}
+	if req.Category == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "カテゴリは必須です")
+	}
+	if req.Priority < 1 || req.Priority > 5 {
+		return echo.NewHTTPError(http.StatusBadRequest, "重要度は1-5の整数で指定してください")
+	}
+	return nil
 }

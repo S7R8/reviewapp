@@ -35,6 +35,14 @@ type GetReviewOutput struct {
 
 // Execute - レビュー詳細を取得
 func (uc *GetReviewUseCase) Execute(ctx context.Context, input GetReviewInput) (*GetReviewOutput, error) {
+	// 0. バリデーション
+	if input.ReviewID == "" {
+		return nil, fmt.Errorf("review ID is required")
+	}
+	if input.UserID == "" {
+		return nil, fmt.Errorf("user ID is required")
+	}
+
 	// 1. レビューを取得
 	review, err := uc.reviewRepo.FindByID(ctx, input.ReviewID)
 	if err != nil {

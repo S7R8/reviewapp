@@ -19,14 +19,17 @@ import (
 )
 
 // InitializeKnowledgeHandler - KnowledgeHandlerを初期化（Wireが自動生成）
-func InitializeKnowledgeHandler(db *sql.DB) (*handler.KnowledgeHandler, error) {
+func InitializeKnowledgeHandler(db *sql.DB, cfg *config.Config) (*handler.KnowledgeHandler, error) {
 	wire.Build(
 		// Repository
 		postgres.NewKnowledgeRepository,
 		wire.Bind(new(repository.KnowledgeRepository), new(*postgres.KnowledgeRepository)),
-
+		// External
+		ProvideOpenAIClient,
+		wire.Bind(new(external.EmbeddingClientInterface), new(*external.OpenAIClient)),
 		// UseCase
 		knowledge.NewCreateKnowledgeUseCase,
+		knowledge.NewUpdateKnowledgeUseCase,
 		knowledge.NewListKnowledgeUseCase,
 		knowledge.NewDeleteKnowledgeUseCase,
 
@@ -52,11 +55,14 @@ func InitializeReviewHandler(db *sql.DB, cfg *config.Config) (*handler.ReviewHan
 		ProvideClaudeClient,
 		wire.Bind(new(external.ClaudeClientInterface), new(*external.ClaudeClient)),
 
+		ProvideOpenAIClient,
+		wire.Bind(new(external.EmbeddingClientInterface), new(*external.OpenAIClient)),
+
 		// UseCase
 		review.NewReviewCodeUseCase,
 		review.NewUpdateFeedbackUseCase,
 		review.NewListReviewsUseCase,
-		review.NewGetReviewUseCase, // ★ 追加
+		review.NewGetReviewUseCase,
 
 		// Handler
 		handler.NewReviewHandler,
@@ -88,5 +94,14 @@ func ProvideClaudeClient(cfg *config.Config) *external.ClaudeClient {
 		cfg.LLM.ClaudeAPIKey,
 		cfg.LLM.ClaudeModel,
 		cfg.LLM.ClaudeMaxTokens,
+	)
+}
+
+// ProvideOpenAIClient - OpenAIClientのプロバイダ
+func ProvideOpenAIClient(cfg *config.Config) *external.OpenAIClient {
+	return external.NewOpenAIClient(
+		cfg.LLM.OpenAIAPIKey,
+		cfg.LLM.OpenAIEmbedding,
+		cfg.LLM.OpenAITimeout,
 	)
 }

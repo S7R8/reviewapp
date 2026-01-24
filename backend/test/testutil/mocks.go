@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/s7r8/reviewapp/internal/domain/model"
 	"github.com/s7r8/reviewapp/internal/infrastructure/external"
@@ -86,6 +87,56 @@ func (m *MockKnowledgeRepository) Delete(ctx context.Context, id string) error {
 		}
 	}
 	return errors.New("knowledge not found")
+}
+
+func (m *MockKnowledgeRepository) CountByUserID(ctx context.Context, userID string) (int, error) {
+	if m.err != nil {
+		return 0, m.err
+	}
+	count := 0
+	for _, k := range m.knowledges {
+		if k.UserID == userID {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (m *MockKnowledgeRepository) SearchBySimilarity(ctx context.Context, userID string, embedding []float32, limit int, threshold float64) ([]*model.Knowledge, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	// 簡易実装：最初のlimit件を返す
+	var result []*model.Knowledge
+	for _, k := range m.knowledges {
+		if k.UserID == userID {
+			result = append(result, k)
+			if len(result) >= limit {
+				break
+			}
+		}
+	}
+	return result, nil
+}
+
+func (m *MockKnowledgeRepository) FindWithoutEmbedding(ctx context.Context, limit int) ([]*model.Knowledge, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.knowledges, nil
+}
+
+func (m *MockKnowledgeRepository) CountByCategory(ctx context.Context, userID string) (map[string]int, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	counts := make(map[string]int)
+	for _, k := range m.knowledges {
+		if k.UserID == userID {
+			counts[k.Category]++
+		}
+	}
+	return counts, nil
 }
 
 // MockReviewRepository - レビューリポジトリのモック
@@ -175,7 +226,6 @@ func (m *MockReviewRepository) UpdateFeedback(ctx context.Context, reviewID stri
 	return nil
 }
 
-// ListWithFilters - フィルター、ソート、ページネーション付きでレビュー一覧を取得（モック）
 func (m *MockReviewRepository) ListWithFilters(ctx context.Context, userID string, filters map[string]interface{}, sortBy, sortOrder string, limit, offset int) ([]*model.Review, error) {
 	if m.err != nil {
 		return nil, m.err
@@ -198,7 +248,6 @@ func (m *MockReviewRepository) ListWithFilters(ctx context.Context, userID strin
 	return result[offset:end], nil
 }
 
-// CountWithFilters - フィルター条件に合致するレビューの総数を取得（モック）
 func (m *MockReviewRepository) CountWithFilters(ctx context.Context, userID string, filters map[string]interface{}) (int, error) {
 	if m.err != nil {
 		return 0, m.err
@@ -211,6 +260,51 @@ func (m *MockReviewRepository) CountWithFilters(ctx context.Context, userID stri
 		}
 	}
 	return count, nil
+}
+
+func (m *MockReviewRepository) CountByUserID(ctx context.Context, userID string) (int, error) {
+	if m.err != nil {
+		return 0, m.err
+	}
+	count := 0
+	for _, r := range m.reviews {
+		if r.UserID == userID {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (m *MockReviewRepository) CountByUserIDAndDateRange(ctx context.Context, userID string, from, to time.Time) (int, error) {
+	if m.err != nil {
+		return 0, m.err
+	}
+	count := 0
+	for _, r := range m.reviews {
+		if r.UserID == userID && r.CreatedAt.After(from) && r.CreatedAt.Before(to) {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (m *MockReviewRepository) GetAverageFeedbackScore(ctx context.Context, userID string) (float64, error) {
+	if m.err != nil {
+		return 0.0, m.err
+	}
+	// 簡易実装：全てのレビューのスコア平均（フィードバックがあるもののみ）
+	var total float64
+	var count int
+	for _, r := range m.reviews {
+		if r.UserID == userID && r.FeedbackScore != nil {
+			total += float64(*r.FeedbackScore)
+			count++
+		}
+	}
+	if count == 0 {
+		return 0.0, nil
+	}
+	return total / float64(count), nil
 }
 
 // MockUserRepository - ユーザーリポジトリのモック
@@ -297,11 +391,6 @@ func (m *MockUserRepository) Delete(ctx context.Context, id string) error {
 	return errors.New("user not found")
 }
 
-// ClaudeClientInterface - Claude Clientのインターフェース
-type ClaudeClientInterface interface {
-	ReviewCode(ctx context.Context, input external.ReviewCodeInput) (*external.ReviewCodeOutput, error)
-}
-
 // MockClaudeClient - Claude APIクライアントのモック
 type MockClaudeClient struct {
 	response *external.ReviewCodeOutput
@@ -330,4 +419,56 @@ func (m *MockClaudeClient) ReviewCode(ctx context.Context, input external.Review
 		return nil, m.err
 	}
 	return m.response, nil
+}
+
+// MockEmbeddingClient - Embedding APIクライアントのモック
+type MockEmbeddingClient struct {
+	embedding  []float32
+	embeddings [][]float32
+	err        error
+}
+
+func NewMockEmbeddingClient() *MockEmbeddingClient {
+	// デフォルトで1536次元のダミーベクトルを返す
+	defaultEmbedding := make([]float32, 1536)
+	for i := range defaultEmbedding {
+		defaultEmbedding[i] = 0.1
+	}
+	return &MockEmbeddingClient{
+		embedding: defaultEmbedding,
+	}
+}
+
+func (m *MockEmbeddingClient) SetEmbedding(embedding []float32) {
+	m.embedding = embedding
+}
+
+func (m *MockEmbeddingClient) SetEmbeddings(embeddings [][]float32) {
+	m.embeddings = embeddings
+}
+
+func (m *MockEmbeddingClient) SetError(err error) {
+	m.err = err
+}
+
+func (m *MockEmbeddingClient) GenerateEmbedding(ctx context.Context, text string) ([]float32, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.embedding, nil
+}
+
+func (m *MockEmbeddingClient) GenerateEmbeddings(ctx context.Context, texts []string) ([][]float32, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	if m.embeddings != nil {
+		return m.embeddings, nil
+	}
+	// embeddings が設定されていない場合は、テキスト数分のembeddingを返す
+	result := make([][]float32, len(texts))
+	for i := range result {
+		result[i] = m.embedding
+	}
+	return result, nil
 }

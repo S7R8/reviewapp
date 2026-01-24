@@ -2,7 +2,7 @@
 
 RAGベースのAIコードレビューツール。ユーザーが登録したナレッジを参照し、一貫性のあるレビューを提供します。
 
-![Demo](C:\output-palette.gif)
+![Demo](sample\output-palette.gif)
 
 ## 概要
 
